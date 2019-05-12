@@ -23,6 +23,10 @@ git push 仓库别名 仓库分支名
 #抛弃本地所有的修改，回到远程仓库的状态
 git fetch --all && git reset --hard origin/mster
 
+#重设第一个commit
+#也就是把所有的改动都重新放回工作区，并清空所有的commit 这样就可以重新提交一次commit了
+git update-ref -d HEAD
+
 
 
 ```
