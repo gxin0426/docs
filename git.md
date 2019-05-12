@@ -1,0 +1,29 @@
+### git常用命令
+
+```shell
+#初始化本地仓库
+git init
+#添加全部已经修改的文件，准备commit提交 该命令效果等同于 git add -A
+git add .
+#将修改后的文件提交本地仓库 
+git commit -m "提交说明"
+#链接到远程仓库，并将代码同步到远程仓库
+git remote add origin 远程仓库地址
+
+#创建一个 upStream （上传流），并将本地代码通过这个 upStream 推送到 别名为 origin 的仓库中的 master 分支
+#-u ，就是创建 upStream 上传流，如果没有这个上传流就无法将代码推送到 github；同时，这个 upStream 只需要在初次推送代码的时候创建，以后就不用创建了
+#另外，在初次 push 代码的时候，可能会因为网络等原因导致命令行终端上的内容一直没有变化，耐心等待一会就好。
+git push -u origin master
+
+#如果有多个远程仓库 或者 多个分支， 并且需要将代码推送到指定仓库的指定分支上，那么在 pull 或者 push 的时候，就需要 按照下面的格式书写：
+
+git pull 仓库别名 仓库分支名 
+git push 仓库别名 仓库分支名
+
+#抛弃本地所有的修改，回到远程仓库的状态
+git fetch --all && git reset --hard origin/mster
+
+
+
+```
+
