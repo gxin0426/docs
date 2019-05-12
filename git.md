@@ -27,6 +27,36 @@ git fetch --all && git reset --hard origin/mster
 #也就是把所有的改动都重新放回工作区，并清空所有的commit 这样就可以重新提交一次commit了
 git update-ref -d HEAD
 
+#还可以展示本地仓库中任意两个 commit 之间的文件变动
+git diff <commit -id> <commit -id>
+
+#输出暂存区和本地最近的版本（commit）的 different（不同）
+git diff --cached
+
+#输出工作区、暂存区 和本地最近的版本（commit）的 different（不同）
+git diff HEAD
+
+#快速切换到上一个分支
+git checkout -
+
+#删除已经合并到 master 的分支
+git branch --merged master | grep -v '^\*\| master'|xargs -n git branch -d 
+
+#展示本地分支关联远程仓库的情况
+git branch -vv
+
+#列出所有远程分支
+git branch -r
+
+#列出本地和远程分支
+git branch -a
+
+#创建并切换到本地分支
+git checkout -b <branch-name>
+#从远程分支中创建并切换到本地分支
+git checkout -b <branch-name> origin/<branch-name>
+
+
 
 
 ```
