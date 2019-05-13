@@ -56,7 +56,6 @@ git checkout -b <branch-name>
 #从远程分支中创建并切换到本地分支
 git checkout -b <branch-name> origin/<branch-name>
 
-gg
 
 
 
