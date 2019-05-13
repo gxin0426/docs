@@ -56,6 +56,33 @@ git checkout -b <branch-name>
 #从远程分支中创建并切换到本地分支
 git checkout -b <branch-name> origin/<branch-name>
 
+#删除本地分支
+git  branch -d <local-branchname>
+
+#删除远程分支
+git push origin --delete <remote-branchname>
+git push origin :<remote-branchname>
+
+#重命名本地分支
+git branch -m <new-branch-name>
+
+#查看标签
+git tag
+
+#展示当前分支的最近的tag
+git describe --tags --abbrev=0
+
+#放弃工作区的修改
+git checkout <file-name>
+
+#放弃所有修改
+git checkout .
+
+#恢复删除的文件
+git rev-list -n 1 HEAD --<file_path>#得到deleting_commit
+git checkout <delete_commit>^ -- <file_path> #回到删除文件 deleting_commit 之前的状态
+
+
 
 
 
