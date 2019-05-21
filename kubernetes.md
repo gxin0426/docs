@@ -428,3 +428,9 @@ Linux 内核使用了诸如 SIGTERM、SIGKILL 和 SIGINIT 等信号来终止进�
 相反，用户可以通过使用 Kubernetes Secrets 对象将隐私信息存储在容器外面，这样更简单、安全。
 
 Kubernetes 提供了一个 Secrets 抽象，允许在 Docker 镜像或 Pod 定义之外存储隐私数据。用户可以通过挂载卷或环境变量的方式把这些信息加载到容器中。更新时，只需更换相关服务的 Pod 并使用新的证书即可。用户也可以通过 Hashicorp Vault 以及Bitnami Sealed Secrets来保存隐私数据。
+
+
+
+### 7.kubernetes中的认证机制
+
+1. server account 是由kubernetes API管理的账户。绑定到了特定的namespace，并由api server在自动创建 server account关联一套凭证 存储在secret中，这些凭证同时被挂载到pod中。从而允许kubernetes api之间的调用
