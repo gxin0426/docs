@@ -57,9 +57,9 @@ mv cfssl-certinfo_linux-amd64 /usr/bin/cfssl-certinfo
   生成CA证书和CA私钥和CSR(证书签名请求): 
 
 ```
-# cfssl gencert -initca ca-csr.json | cfssljson -bare ca  ## 初始化ca
+# cfssl gencert -initca csr.json | cfssljson -bare ca  ## 初始化ca
 # ls ca*
-ca.csr  ca-csr.json  ca-key.pem  ca.pem
+ca.csr  csr.json  ca-key.pem  ca.pem
 ```
 
 该命令会生成运行CA所必需的文件`ca-key.pem`（私钥）和`ca.pem`（证书），还会生成`ca.csr`（证书签名请求），用于交叉签名或重新签名。 

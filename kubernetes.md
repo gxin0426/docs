@@ -434,3 +434,23 @@ Kubernetes 提供了一个 Secrets 抽象，允许在 Docker 镜像或 Pod 定�
 ### 7.kubernetes中的认证机制
 
 1. server account 是由kubernetes API管理的账户。绑定到了特定的namespace，并由api server在自动创建 server account关联一套凭证 存储在secret中，这些凭证同时被挂载到pod中。从而允许kubernetes api之间的调用
+
+### 8.kubernetes中各组件的作用
+
+- API Server： 提供资源对象的唯一操作入口，其他组件必须通过他提供的API来操作资源对象。
+- Controller Manager : 集群的内部管理控制中心。主要目的是实现kubernetes集群的故障检测和自动恢复等工作。包括两个核心组件： Node Controller Replication Controller 。其中，其中Node Controller负责计算节点的加入和退出，可以通过Node  Controller实现计算节点的扩容和缩容。Replication  Controller用于Kubernetes资源对象RC的管理，应用的扩容、缩容以及滚动升级都是有Replication  Controller来实现 
+
+​        Controller Manager包含Replication Controller、Node Controller、ResourceQuota Controller、      Namespace Controller、ServiceAccount Controller、Token  Controller、Server Controller以及Endpoint Controller等多个控制器，Controller  Manager是这些Controller的管理者 
+
+- *Scheduler*: 集群中的调度器，负责Pod在集群的中的调度和分配 
+- *Kubelet*: 负责本Node节点上的Pod的创建、修改、监控、删除等Pod的全生命周期管理，Kubelet实时向API Server发送所在计算节点（Node）的信息 
+
+节点管理：kubelet可以自动向API Server注册自己，它可以采集所在计算节点的资源信息和使用情况并提交给API Server，通过启动/停止kubelet进程来实现计算节点的扩容、缩容。
+
+Pod管理：kubelet通过API Server监听ETCD目录，同步Pod清单，当发现有新的Pod绑定到所在的节点，则按照Pod清单的要求创建改清单。如果发现本地的Pod被删除，则kubelet通过docker client删除该容器。
+
+健康检查：Pod通过两类探针来检查容器的健康状态。一个是LivenessProbe探针，用于判断容器是否健康，如果LivenessProbe探针探测到容器不健康，则kubelet将删除该容器，并根据容器的重启策略做相应的处理。另一类是ReadnessProbe探针，用于判断容器是否启动完成，且准备接受请求，如果ReadnessProbe探针检测到失败，则Pod的状态被修改。Enpoint   Controller将从Service的Endpoint中删除包含该容器的IP地址的Endpoint条目。kubelet定期调用LivenessProbe探针来诊断容器的健康状况，它目前支持三种探测：HTTP的方式发送GET请求;  TCP方式执行Connect目的端口; Exec的方式，执行一个脚本。
+
+cAdvisor资源监控:  在Kubernetes集群中，应用程序的执行情况可以在不同的级别上检测到，这些级别包含Container，Pod，Service和整个集群。作为Kubernetes集群的一部分，Kubernetes希望提供给用户各个级别的资源使用信息，这将使用户能够更加深入地了解应用的执行情况，并找到可能的瓶颈。Heapster项目为Kubernetes提供了一个基本的监控平台，他是集群级别的监控和事件数据集成器。Heapster通过收集所有节点的资源使用情况，将监控信息实时推送至一个可配置的后端，用于存储和可视化展示
+
+- *Kube-Proxy*: 实现Service的抽象，为一组Pod抽象的服务（Service）提供统一接口并提供负载均衡功能 
