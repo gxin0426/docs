@@ -454,3 +454,63 @@ Pod管理：kubelet通过API Server监听ETCD目录，同步Pod清单，当发�
 cAdvisor资源监控:  在Kubernetes集群中，应用程序的执行情况可以在不同的级别上检测到，这些级别包含Container，Pod，Service和整个集群。作为Kubernetes集群的一部分，Kubernetes希望提供给用户各个级别的资源使用信息，这将使用户能够更加深入地了解应用的执行情况，并找到可能的瓶颈。Heapster项目为Kubernetes提供了一个基本的监控平台，他是集群级别的监控和事件数据集成器。Heapster通过收集所有节点的资源使用情况，将监控信息实时推送至一个可配置的后端，用于存储和可视化展示
 
 - *Kube-Proxy*: 实现Service的抽象，为一组Pod抽象的服务（Service）提供统一接口并提供负载均衡功能 
+
+### 9.Kubernetes中的ResourceQuota和LimitRange配置资源限
+
+- 两种控制策略的作用范围都是对于某一 namespace，`ResourceQuota` 用来限制 namespace 中所有的 Pod 占用的总的资源 request 和 limit，而 `LimitRange` 是用来设置 namespace 中 Pod 的默认的资源 request 和 limit 值。 
+- 配置计算资源分配
+
+```yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata: 
+  name: test
+  namespace: dev
+spec: 
+  hard:
+    pod: "20"
+    requests.cpu: "20"
+    requests.memory: 100Gi
+    limits.cpu: "40"
+    limits.memory: 200Gi
+    
+```
+
+- 配置对象数量限制
+
+```yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata: 
+  name: test2
+  namespace: dev
+spec: 
+  hard: 
+    configmaps: "20"
+    persistentvolumesclaims: "4"
+    replicationsets: "8"
+    secrets: "3"
+    services: "3"
+    services.loadbalancers: "2"
+```
+
+- limitrange 限制pod的没存和cpu
+
+```yaml
+apiVersion: v1
+kind: LimitRange
+metadata: 
+  name: test3
+  namespace: dev
+spec: 
+  limits: 
+  - default:
+      memory: 50Gi
+      cpu: "8"
+    defaultRequest:
+      memory: 1Gi
+      cpu: "4"
+    type: Container
+    
+```
+

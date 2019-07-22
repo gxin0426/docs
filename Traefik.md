@@ -41,6 +41,9 @@ spec:
       labels:
         k8s-app: traefik-ingress-lb
         name: traefik-ingress-lb
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8580"
     spec:
       terminationGracePeriodSeconds: 60
       hostNetwork: true

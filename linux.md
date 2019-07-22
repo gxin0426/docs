@@ -55,3 +55,35 @@ mount -o remount /dev/shm
 
 ~~~
 
+### 5.几个常用的关机命令
+
+```shell
+halt: 关机但不关闭电源（加p参数关闭电源）不加参数时调用shutdown命令
+halt -p 相当于poweroff
+halt -f 强制关机
+halt -i 关机或重启前关闭所有网络接口
+
+
+shutdown实际上是调用init 0, init 0会cleanup一些工作然后调用halt或者poweroff。其实主要区别是halt和poweroff，做没有acpi的系统上，halt只是关闭了os，电源还在工作，你得手动取按一下那个按钮，而poweroff会发送一个关闭电源的信号给acpi。但在现在的系统上，他们实际上都一样了
+
+```
+
+### 6.lsblk命令
+
+```shell
+lsblk可以列出所有可用块设备的信息。比如逻辑磁盘，而df -h 是查看文件系统级别的信息
+```
+
+### 7.快捷键
+
+```shell
+1.ctrl+a #光标回到行首
+2.ctrl+e #光标回到行尾
+3.ctrl+w #移除光标前的一个单词
+4.Ctrl+k #删除光标处到行尾的字符
+5.Ctrl+y #粘贴Ctrl+u，Ctrl+k，Ctrl+w删除的文本
+6.Esc+b #移动到当前单词的开头
+7.Esc+f #移动到当前单词的结尾
+8.Ctrl+d #向行尾删除一个字符
+```
+
