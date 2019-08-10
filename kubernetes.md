@@ -514,3 +514,123 @@ spec:
     
 ```
 
+### 10.kubernetes架构
+
+![](image\k8s-arch.jpg)
+
+1.master节点工作原理
+
+![](image\master.png)
+
+```shell
+
+```
+
+1. Kubecfg将特定的请求，比如创建Pod，发送给Kubernetes Client。
+2. Kubernetes Client将请求发送给API server。
+3. API Server根据请求的类型，比如创建Pod时storage类型是pods，然后依此选择何种REST Storage API对请求作出处理。
+4. REST Storage API对的请求作相应的处理。
+5. 将处理的结果存入高可用键值存储系统Etcd中。
+6. 在API Server响应Kubecfg的请求后，Scheduler会根据Kubernetes Client获取集群中运行Pod及Minion/Node信息。
+7. 依据从Kubernetes Client获取的信息，Scheduler将未分发的Pod分发到可用的Minion/Node节点上。
+
+**master**
+
+- **api server**
+- **controller manager**
+- **scheduler**
+
+**node**
+
+- **kubelet**
+
+- **proxy**
+
+  
+
+### 11.kubernetes中hostport port targetport nodeport 区别
+
+- **hostport：** 这是一种直接定义Pod网络的方式。hostPort是直接将容器的端口与所调度的节点上的端口路由，这样用户就可以通过宿主机的IP加上来访问Pod了
+- **port：** port是在Service IP中使用的，使用Service IP +Port就可以访问到服务
+- **nodePort：** nodePort在kubenretes里是一个广泛应用的服务暴露方式。Kubernetes中的service默认情况下都是使用的ClusterIP这种类型，这样的service会产生一个ClusterIP，这个IP只能在集群内部访问，要想让外部能够直接访问service，需要将service type修改为 nodePort
+- **targetPort：** targetPort 说的是Pod内的应用暴露的服务端口，Service IP+Port的访问会被代理到这个Target Port
+- **containerPort:** 在容器上，用于和pod绑定
+
+1、NodePort和port
+
+前者是将服务暴露给外部用户使用并在node上、后者则是为内部组件相互通信提供服务的，是在service上的端口。
+
+2、targetPort
+
+targetPort是pod上的端口，用来将pod内的container与外部进行通信的端口
+
+ 3、port、NodePort、ContainerPort和targetPort在哪儿？
+
+ port在service上，负责处理对内的通信，clusterIP:port
+
+NodePort在node上，负责对外通信，NodeIP:NodePort
+
+ ContainerPort在容器上，用于被pod绑定
+
+ targetPort在pod上、负责与kube-proxy代理的port和Nodeport数据进行通信
+
+### 12.k8s集群和host同步时间
+
+```yaml
+    #映射主机/etc/localtime
+    spec:
+      containers:
+      - name: myweb
+        image: harbor/tomcat:8.5-jre8
+        volumeMounts:
+        - name: host-time
+          mountPath: /etc/localtime
+        ports:
+        - containerPort: 80
+      volumes:
+      - name: host-time
+        hostPath:
+          path: /etc/localtime
+```
+
+### 13. kube api
+
+```yaml
+kubectl api-versions
+```
+
+### 14. 镜像加速
+
+```shell
+#如果我们在docker官方仓库拉取的镜像是以下形式：
+docker pull xxx/yyy:zz
+#那么使用Azure中国镜像，应该是这样拉取：
+docker pull dockerhub.azk8s.cn/xxx/yyy:zz
+#mysql5.7
+docker pull dockerhub.azk8s.cn/library/mysql:5.7
+
+
+#如果我们拉取的google镜像是以下形式：
+docker pull gcr.io/xxx/yyy:zzz
+#那么使用Azure中国镜像，应该是这样拉取：
+docker pull gcr.mirrors.ustc.edu.cn/xxx/yyy:zzz
+#以拉取gcr.io/kubernetes-helm/tiller:v2.9.1为例，如下：
+docker pull gcr.azk8s.cn/kubernetes-helm/tiller:v2.9.1
+
+#如果我们拉取的kubernetes google镜像是以下形式：
+docker pull k8s.gcr.io/xxx:yyy
+#相当于docker pull gcr.io/google-containers/xxx:yyy
+#那么使用Azure中国镜像，应该是这样拉取：
+docker pull gcr.azk8s.cn/google-containers/xxx:yyy
+#以拉取k8s.gcr.io/addon-resizer:1.8.3为例，如下：
+docker pull gcr.azk8s.cn/google-containers/addon-resizer:1.8.3
+
+#如果我们拉取的quay.io镜像是以下形式：
+docker pull quay.io/xxx/yyy:zzz
+#那么使用Azure中国镜像，应该是这样拉取：
+docker pull quay.azk8s.cn/xxx/yyy:zzz
+#以拉取quay.io/coreos/kube-state-metrics:v1.5.0为例，如下：
+docker pull quay.azk8s.cn/coreos/kube-state-metrics:v1.5.0
+
+```
+
