@@ -3,6 +3,17 @@
 ```shell
 rpm -qa |grep [包名]
 rpm -e //删除包
+
+－ivh：安装显示安装进度--install--verbose--hash
+－Uvh：升级软件包--Update；
+－qpl：列出RPM软件包内的文件信息[Query Package list]；
+－qpi：列出RPM软件包的描述信息[Query Package install package(s)]；
+－qf：查找指定文件属于哪个RPM软件包[Query File]；
+－Va：校验所有的RPM软件包，查找丢失的文件[View Lost]；
+－e：删除包
+
+#参考文章
+https://blog.csdn.net/zhaoyue007101/article/details/8485186
 ```
 
 ### 2.查看系统版本
@@ -87,3 +98,6 @@ lsblk可以列出所有可用块设备的信息。比如逻辑磁盘，而df -h 
 8.Ctrl+d #向行尾删除一个字符
 ```
 
+### 8. snat dnat MASQUERADE
+
+https://www.cnblogs.com/Dicky-Zhang/p/5934657.html
