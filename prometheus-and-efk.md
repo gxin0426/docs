@@ -69,7 +69,18 @@ curl 'localhost:9200/brand/_search?pretty=true'
 
 #参考链接
 https://www.jianshu.com/p/7fe83806b909
-
+https://segmentfault.com/a/1190000011661882
 
 ```
 
+### 3.elk收集pod日志 以及docker打印日志的几种方式
+
+- docker日志可以分成两类：1.stdout标准输出 2.是文件日志
+
+stdout是写在标准输出里面的日志，比如你在程序里面，通过print或者echo来输出的时候，这种输出标准在linux上面其实是往一个ID为零的文件表述书里面去写；另外的就是文件日志，文件日志就是写在磁盘上的日志，一般来说我们会在传统的应用里面会用得多一些。
+
+我们通过exec.Command启动了一个命令，带一些参数，然后就可以通过标准的pipeline拿到标准输出，后面就可以拿到程序运行过程中产生标准输出。 Docker也是用这个原理来拿的，所有的容器通过Docker Daemon启动，实际上属于Docker的一个子进程， 它可以拿到你的容器里面进程的标准输出，然后拿到标准输出之后，会通过它自身的一个叫做LogDriver的模块来处理，LogDriver就是Docker用来处理容器标准输出的一个模块。 Docker支持很多种不同的处理方式，比如你的标准输出之后，在某一种情况下会把它写到一个日志里面，Docker默认的JSON File日志，除此之外，Docker还可以把它发送到syslog里面，或者是发送到journald里面去，或者是gelf的一个系统。
+
+![](dockerimage\docker日志打印方式.png)
+
+![](dockerimage\docker的logdriver.png)
