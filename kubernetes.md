@@ -642,3 +642,64 @@ docker pull quay.azk8s.cn/coreos/kube-state-metrics:v1.5.0
 - Init Container支持普通应用Container的所有参数，包括资源限制，挂载卷，安全设置等。但是Init Container  在资源的申请和限制上略有不同，同时，由于Init Container必须在Pod ready之前完成并退出，所以它不支持 readiness  探针。
 
 - https://blog.51cto.com/tryingstuff/2130997?source=dra
+
+### 16.node 调度和隔离 亲和性 
+
+- node selector
+
+```yaml
+#得到node的名字
+kubectl get nodes 
+#给node打标签
+kubectl label nodes <node-name> <label-key>=<label-value>
+#删除标签
+kubectl label nodes <node-name> <label-key>-
+#查看node的label
+kubectl get nodes --show-labels 
+
+#给pod设置 nodeselector
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+  labels: 
+    env: test
+spec:
+  containers:
+  - name: test-nginx
+    image: nginx
+  nodeSelector:
+    nodetype: prom 
+```
+
+- node taint
+
+```yaml
+#给node设置为taint
+kubectl taint nodes <node-name> nodetype=clustermaster:PreferNoSchedule
+kubectl taint nodes <node-name> nodetype=clustermaster:NoSchedule
+kubectl taint nodes <node-name> nodetype=clustermaster:NoExecute
+
+kubectl taint nodes <node-name> nodetype:PreferNoSchedule-
+kubectl taint nodes <node-name> nodetype:NoSchedule-
+kubectl taint nodes <node-name> nodetype:NoExecute-
+
+#查看node上的taint
+kubectl describe nodes node1
+
+#可以为pod设置toleration 使pod可以调度到taint node上
+
+#只要在 pod 的 spec 中设置 tolerations 字段即可，可以有多个 key
+#如果将 toleration 应用于 pod 上，则表示这些 pod 可以（但不要求）被调度到具有相应 taint 的节点上
+tolerations:
+- key: "nodetype"
+  operator: "Equal"
+  value: "clustermaster"
+  effect: "PreferNoSchedule"
+  tolerationSeconds: 6000
+  
+
+
+```
+

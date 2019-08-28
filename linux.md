@@ -101,3 +101,19 @@ lsblk可以列出所有可用块设备的信息。比如逻辑磁盘，而df -h 
 ### 8. snat dnat MASQUERADE
 
 https://www.cnblogs.com/Dicky-Zhang/p/5934657.html
+
+### 9.进程信息区统计信息区域各列含义
+
+1. PID ---进程id
+2. PPID ---父进程id
+3. RUSER --- REAL USER NAME
+4. UID --- 进程所有者的用户id
+5. USER ---进程所有者的用户名
+6. GROUP ---进程所有者的组名
+7. TTY --- 启动进程的终端名。不是从终端启动的进程则显示为 ?
+8. NI --- nice值。负值表示高优先级，正值表示低优先级
+9. P --- 最后使用的CPU，仅在多CPU环境下有意义
+10. %CPU ---  上次更新到现在的CPU时间占用百分比
+11. %MEM --- 进程使用的物理内存百分比
+12. TIME --- 进程使用的CPU时间总计，单位秒
+13. VIRT --- 进程使用的虚拟内存总量 单位kb。VIRT=SWAP+RES
