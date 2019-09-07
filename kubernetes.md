@@ -703,3 +703,121 @@ tolerations:
 
 ```
 
+### 17.利用kubectl提高工作效率
+
+- **命令完成**
+
+命令完成是提高你的kubectl生产力的最有用但经常被忽视的技巧之一
+
+命令完成的工作原理：通常，命令完成是一个shell功能，它通过completion script(完成脚本)的方式工作。完成脚本是一个shell脚本，用于定义特定命令的完成行为。获取完成脚本可以完成相应的命令。
+
+Kubectl可以使用以下命令自动生成并打印出Bash和Zsh的完成脚本
+
+~~~shell
+kubectl completion bash
+or
+kubectl completion zsh
+~~~
+
+Bash的完成脚本取决于bash-completion项目，因此您必须先安装它
+
+~~~shell
+yum install -y bash-completion
+
+#您可以使用以下命令测试是否正确安装了bash-completion
+type _init_completion
+
+#如果这输出shell函数的代码，则已正确安装bash-completion。如果该命令输出not found错误，则必须将以下行添加到您的~/.bashrc文件中
+#是否必须将此行添加到您的~/.bashrc文件中，取决于您用于安装bash-completion的包管理器。对于APT来说，这是必要的，对于yum，则无需。
+source /usr/share/bash-completion/bash_completion
+
+#安装bash-completion后，您必须进行设置，以便在所有shell会话中获取kubectl 完成脚本。一种方法是将以下行添加到您的~/.bashrc文件中
+source <(kubectl completion bash)
+
+#另一种可能性是将kubectl完成脚本添加到/etc/bash_completion.d目录中（如果它不存在则创建它）：
+kubectl completion bash >/etc/bash_completion.d/kubectl
+
+#使用自定义列输出格式
+kubectl get pods -o custom-columns='NAME:metadata.name'
+~~~
+
+- ### JSONPath表达式
+
+选择资源字段的表达式基于JSONPath。JSONPath是一种从JSON文档中提取数据的语言（类似于XPath for XML）。选择单个字段只是JSONPath的最基本用法。它有很多功能，如列表选择器，过滤器等。但是，kubectl explain仅支持JSONPath功能的一部分。以下通过示例用法总结了这些支持的功能：
+
+### 18.kubernetes 中HPA的应用
+
+~~~yaml
+ 1 apiVersion: v1
+ 2 kind: Service
+ 3 metadata:
+ 4   name: svc-hpa
+ 5   namespace: default
+ 6 spec:
+ 7   selector:
+ 8     app: myapp
+ 9   type: NodePort  ##注意这里是NodePort，下面压力测试要用到。
+10   ports:
+11   - name: http
+12     port: 80
+13 ---
+14 apiVersion: apps/v1
+15 kind: Deployment
+16 metadata:
+17   name: myapp
+18   namespace: default
+19 spec:
+20   replicas: 1
+21   selector:
+22     matchLabels:
+23       app: myapp
+24   template:
+25     metadata:
+26       name: myapp-demo
+27       namespace: default
+28       labels:
+29         app: myapp
+30     spec:
+31       containers:
+32       - name: myapp
+33         image: ikubernetes/myapp:v1
+34         imagePullPolicy: IfNotPresent
+35         ports:
+36         - name: http
+37           containerPort: 80
+38         resources:
+39           requests:
+40             cpu: 50m
+41             memory: 50Mi
+42           limits:
+43             cpu: 50m
+44             memory: 50Mi
+~~~
+
+~~~yaml
+ 1 apiVersion: autoscaling/v2beta1
+ 2 kind: HorizontalPodAutoscaler
+ 3 metadata:
+ 4   name: myapp-hpa-v2
+ 5   namespace: default
+ 6 spec:
+ 7   minReplicas: 1         ##至少1个副本
+ 8   maxReplicas: 8         ##最多8个副本
+ 9   scaleTargetRef:
+10     apiVersion: apps/v1
+11     kind: Deployment
+12     name: myapp
+13   metrics:
+14   - type: Resource
+15     resource:
+16       name: cpu
+17       targetAverageUtilization: 50  ##注意此时是根据使用率，也可以根据使用量：targetAverageValue
+18   - type: Resource
+19     resource:
+20       name: memory
+21       targetAverageUtilization: 50  ##注意此时是根据使用率，也可以根据使用量：targetAverageValue
+
+#使用ab工具模拟压力测试
+ab -c 1000 -n 5000000 http://192.168.1.103:31727/index.html
+~~~
+

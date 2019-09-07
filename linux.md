@@ -117,3 +117,48 @@ https://www.cnblogs.com/Dicky-Zhang/p/5934657.html
 11. %MEM --- 进程使用的物理内存百分比
 12. TIME --- 进程使用的CPU时间总计，单位秒
 13. VIRT --- 进程使用的虚拟内存总量 单位kb。VIRT=SWAP+RES
+
+### 10.stress 工具
+
+~~~shell
+-v 显示版本号
+-q 不显示运行信息
+-n 显示已完成的指令情况
+-t --timeout N 指定运行N秒后结束
+--backup N 指定N微秒后运行
+-c 产生n个进程 每个进程都反复不停的计算随机数的平方根
+-i 产生n个进程 每个进程反复调用sync()，sync()用于将内存上的内容写到硬盘上
+-m --vm n 产生n个进程,每个进程不断调用内存分配malloc和内存释放free函数
+--vm-bytes B 指定malloc时内存的字节数 （默认256MB）
+--vm-hang N 指定在free钱的秒数
+-d --hadd n 产生n个执行write和unlink函数的进程
+-hadd-bytes B 指定写的字节数
+--hadd-noclean 不unlink
+--vm-hang 表示malloc分配的内存多少时间后在free()释放掉
+时间单位可以为秒s，分m，小时h，天d，年y，文件大小单位可以为K，M，G
+
+-d forks
+--hdd forks 产生多个执行write()函数的进程
+--hdd-bytes bytes 指定写的Bytes数，默认是1GB
+--hdd-noclean 不要将写入随机ASCII数据的文件Unlink
+~~~
+
+~~~yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: memory-demo
+  namespace: mem-example
+spec:
+  containers:
+  - name: memory-demo-ctr
+    image: polinux/stress
+    resources:
+      limits:
+        memory: "200Mi"
+      requests:
+        memory: "100Mi"
+    command: ["stress"]
+    args: ["--vm", "1", "--vm-bytes", "150M", "--vm-hang", "1"]
+~~~
+
