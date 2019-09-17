@@ -821,3 +821,17 @@ kubectl get pods -o custom-columns='NAME:metadata.name'
 ab -c 1000 -n 5000000 http://192.168.1.103:31727/index.html
 ~~~
 
+
+
+
+
+### 19 下载k8s二进制文件并安装集群
+
+~~~shell
+1.在https://github.com/kubernetes/kubernetes/releases/tag/v1.14.6 下载文件
+2.解压并运行  ./kubernetes/cluster/get-kube-binaries.sh 获取二进制文件 （需要翻墙）
+3.
+
+
+~~~
+
