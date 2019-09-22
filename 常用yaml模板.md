@@ -60,3 +60,27 @@ spec:
     app: nginx
 ~~~
 
+### 4.deployment
+
+~~~yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata: 
+  name: hello-dep
+spec: 
+  replicas: 3
+  template:
+    metadata: 
+      labels: 
+        app: hello
+        tier: backend
+        track: stable
+    spec: 
+      containers: 
+      - name: hello
+        image: hello
+        ports: 
+        - name: http
+          containerPort: 80
+~~~
+

@@ -835,3 +835,5 @@ ab -c 1000 -n 5000000 http://192.168.1.103:31727/index.html
 
 ~~~
 
+###20.[Kubernetes 针对资源紧缺处理方式的配置](https://www.kubernetes.org.cn/1150.html)
+

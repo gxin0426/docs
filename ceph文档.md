@@ -23,6 +23,13 @@
 8.ceph osd pool rm pool-name pool-name --yes-i-really-mean-it
 ~~~
 
+### 创建pool
+
+~~~shell
+ceph osd pool create {pool-name} {pg-num} [{pgp-num}] [replicated] \
+     [crush-ruleset-name] [expected-num-objects]
+~~~
+
 
 
 
