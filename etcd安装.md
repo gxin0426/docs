@@ -134,7 +134,7 @@ $ openssl x509  -noout -text -in  etcd.pem
 ~~~shell
 wget https://github.com/coreos/etcd/releases/download/v3.1.6/etcd-v3.1.6-linux-amd64.tar.gz
 #解压缩etcd-v3.1.6-linux-amd64.tar.gz，将其中的etcd和etcdctl两个可执行文件复制到各节点的/usr/bin目录。
-mkdir -p /var/lib/etcd
+mkdir -p /var/lib/etcdcd 
 
 #使用systemctl启动和管理etcd服务，在每个节点上创建etcd的systemd unit文件/usr/lib/systemd/system/etcd.service，注意替换ETCD_NAME和INTERNAL_IP变量的值：
 
@@ -231,5 +231,13 @@ ETCDCTL_API=3 etcdctl --endpoints $ENDPOINT snapshot save snapshotdb
 # 验证快照
 ETCDCTL_API=3 etcdctl --write-out=table snapshot status snapshotdb
 
+~~~
+
+### troubleshooting
+
+~~~shell
+#1.Failed at step CHDIR spawning /usr/bin/etcd: No such file or directory
+fix:创建data-dir ：/var/lib/etcd
+#2.health check for peer 323e5ea4891348e5 could not connect: dial tcp 192.168.1.157:2380: getsockopt: connection refused
 ~~~
 

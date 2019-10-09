@@ -830,10 +830,38 @@ ab -c 1000 -n 5000000 http://192.168.1.103:31727/index.html
 ~~~shell
 1.在https://github.com/kubernetes/kubernetes/releases/tag/v1.14.6 下载文件
 2.解压并运行  ./kubernetes/cluster/get-kube-binaries.sh 获取二进制文件 （需要翻墙）
-3.
-
-
 ~~~
 
-###20.[Kubernetes 针对资源紧缺处理方式的配置](https://www.kubernetes.org.cn/1150.html)
+###20.Kubernetes 针对资源紧缺处理方式的配置
+
+https://www.kubernetes.org.cn/1150.html
+
+1. nodefs : 指node自身的存储 存储daemon的运行日志等 ， 一般指root分区
+2. imagefs： 指docker daemon用于存储image和容器可写层（wirite layer）的磁盘
+
+### 21.sealos安装kubernetes集群
+
+~~~shell
+#安装
+sealos init \
+    --master 192.168.1.155 \
+    --master 192.168.1.156 \
+    --master 192.168.1.157 \
+    --node 192.168.1.158 \
+    --user root \
+    --passwd 123456 \
+    --pkg-url /root/kube1.16.0.tar.gz  \
+    --version v1.16.0               
+#清理
+sealos clean \
+    --master 192.168.1.155 \
+    --master 192.168.1.156 \
+    --master 192.168.1.157 \
+    --node 192.168.1.158 \
+    --user root \
+    --passwd 123456
+#教程
+https://www.kubernetes.org.cn/5904.html
+https://www.jianshu.com/p/0ce1b53478ce
+~~~
 
