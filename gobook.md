@@ -369,6 +369,117 @@ type Namer interface {
 }
 ~~~
 
+- 类型判断
+
+~~~go
+//在处理来自于外部的、类型未知的数据时，比如解析诸如 JSON 或 XML 编码的数据，类型测试和转换会非常有用
+func classifier(items ...interface{}) {
+	for i, x := range items {
+		switch x.(type) {
+		case bool:
+			fmt.Printf("para %d is a bool\n", i)
+		case float64:
+			fmt.Printf("para %d is a float64\n", i)
+		case int32:
+			fmt.Printf("para %d is a int32\n", i)
+		case string:
+			fmt.Printf("para %d is a string\n", i)
+		default:
+			fmt.Println("unknow")
+		}
+	}
+}
+~~~
+
+- print函数检验是否可以打印自身
+
+~~~go
+type Stringer intterface{
+    String() string
+}
+if sv,ok := v.(Stringer); ok{
+    fmt.Printf("v implemets String(): %s\n",sv.String())
+}
+~~~
+
+- 使用方法集与接口
+
+~~~go
+package main
+type List []int
+func (l List) len() int {
+	return len(l)
+}
+func (l *List) Append(val int) {
+	l.Append(val)
+}
+type Appender interface {
+	Append(int)
+}
+func CountInfo(a Appender, start, end int) {
+	for i := start; i <= end; i++ {
+		a.Append(i)
+	}
+}
+type Lener interface {
+	len() int
+}
+func LongEnough(l Lener) bool {
+	return l.len()*10 > 42
+}
+func main() {
+	var lst List
+	plst := new(List)
+    var ttt Appender
+    //报错 cannot use lst (type List) as type Appender in assignment:
+	//List does not implement Appender (Append method has pointer receiver)
+    ttt = lst 
+	var tt Lener
+	tt = plst
+    aa := tt.len()
+	LongEnough(lst)
+	//报错 值接受者不能调用指针接受者的方法 反则可以
+    CountInfo(lst, 1, 10)
+	CountInfo(plst, 1, 10)
+	LongEnough(plst)
+	lst.Append(20)
+}
+总结：类型*t 的可调用方法集包含接受者为*t和t的所有方法集
+     类型t的可调用方法集包含接受者为t的所有方法
+     类型t的可调用方法集不包含接受者*t的方法
+~~~
+
+- 空接口
+
+~~~go
+//空接口实现二叉树
+package main
+import "fmt"
+type Node struct {
+	le   *Node
+	data interface{}
+	ri   *Node
+}
+func NewNode(left, right *Node) *Node {
+	return &Node{left, nil, right}
+}
+func (n *Node) SetData(data interface{}) {
+	n.data = data
+}
+func main() {
+	root := NewNode(nil, nil)
+	root.SetData("root node")
+	// make child (leaf) nodes:
+	a := NewNode(nil, nil)
+	a.SetData("left node")
+	b := NewNode(nil, nil)
+	b.SetData("right node")
+	root.le = a
+	root.ri = b
+	fmt.Printf("%v\n", root) // Output: &{0x125275f0 root node 0x125275e0}
+}
+~~~
+
 
 
 
