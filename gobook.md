@@ -358,6 +358,17 @@ runtime.ReadMemStats(&m)
 fmt.Printf("%d Kb\n", m.Alloc/1024)
 ~~~
 
+## 7.接口反射
+
+- 定义格式
+
+~~~go
+type Namer interface {
+    Method1(param_list) return_type
+    Method2(param_list) return_type
+}
+~~~
+
 
 
 
