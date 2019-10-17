@@ -67,7 +67,7 @@
 
   
 
-### 3.常见小报错
+### 3.常见报错
 
 ```go
 import fmt 改成 import "fmt"
@@ -77,7 +77,7 @@ package main:
 1.go:4:1: expected ';', found 'func'
 ```
 
-unexpected semicolon or newline before { 
+unexpected semicolon or newline before 
 
 ```go
 package main
@@ -112,12 +112,12 @@ func main(){
 报错：
 
 ```
-# command-line-arguments
-.\1.go:5: cannot refer to unexported name fmt.println
-.\1.go:5: undefined: fmt.println
+# command-line-arguments  
+.\1.go:5: cannot refer to unexported name fmt.println  
+.\1.go:5: undefined: fmt.println  
 ```
 
-正确写法：
+正确写法： 
 
 ```
 package main
