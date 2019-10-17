@@ -192,3 +192,10 @@ $ btrfs qgroup limit -e 50G /var/lib/docker/btrfs/subvolumes/<CONTAINER_ID>
 #文章链接：https://yq.aliyun.com/articles/272173（其中包括 如何给容器服务的Docker增加数据盘）
 ~~~
 
+### 6.载出和载入镜像
+
+~~~shell
+$ docker save -o calico_node_v3.8.2.tar calico/node:v3.8.2
+$ docker load --input calico_node_v3.8.2.tar
+~~~
+

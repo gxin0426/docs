@@ -634,14 +634,14 @@ docker pull quay.azk8s.cn/coreos/kube-state-metrics:v1.5.0
 
 ```
 
-### 15.init Container
+### 15.init Container 健康检测 服务依赖  
 
 - 他们仅运行一次，成功后就会退出。
 - 每个容器必须在成功执行完成后，系统才能继续执行下一个容器。
 - 如果Init Container运行失败，kubernetes 将会重复重启Pod,直到Init Container 成功运行，但是如果  Pod的重启策略（restartPolicy）设置为Never,则Pod不会重启。
 - Init Container支持普通应用Container的所有参数，包括资源限制，挂载卷，安全设置等。但是Init Container  在资源的申请和限制上略有不同，同时，由于Init Container必须在Pod ready之前完成并退出，所以它不支持 readiness  探针。
-
 - https://blog.51cto.com/tryingstuff/2130997?source=dra
+- https://blog.csdn.net/qq_34463875/article/details/78113382
 
 ### 16.node 调度和隔离 亲和性 
 
@@ -842,6 +842,26 @@ https://www.kubernetes.org.cn/1150.html
 ### 21.sealos安装kubernetes集群
 
 ~~~shell
+#安装docker过程
+$ sudo yum remove docker \
+                  docker-client \
+                  docker-client-latest \
+                  docker-common \
+                  docker-latest \
+                  docker-latest-logrotate \
+                  docker-logrotate \
+                  docker-engine
+$ sudo yum install -y yum-utils \
+  device-mapper-persistent-data \
+  lvm2
+$ sudo yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+$ sudo yum install docker-ce-18.09.1 docker-ce-cli-18.09.1 containerd.io
+
+
+#安装sealos
+wget https://github.com/fanux/sealos/releases/download/v2.0.7/sealos && chmod +x sealos && mv sealos /usr/bin
 #安装
 sealos init \
     --master 192.168.1.155 \
