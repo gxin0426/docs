@@ -46,6 +46,69 @@ API Server提供了k8s各类资源对象的增删改查及watch等http rest接�
 1. 环境变量 ： 在创建pod的时候kubelet会在该pod中注入集群内所有service的环境变量（不通用）
 2. DNS：使用CoreDNS进行服务发现（ https://blog.csdn.net/waltonwang/article/details/54317082 ）
 
+- 暴露服务
+
+1. ClusterIP： 默认的ServiceType 通过集群内的ClusterIP在内部发布服务
+2. NodePort： 对集群外暴露服务
+3. LoadBalancer： 需要云的支持
+4. ExternalName： 集群内发布服务 借助于CoreDns
+
+- 内部原理（iptables 和 ipvs）
+
+  - iptables模式
+    - iptables模式使用nat完成转发， 以prometheus nodeport为例
+
+  1. 首先，通过node的32018端口访问 会进入到以下链中
+
+  ```shell 
+  -A KUBE-NODEPORTS -p tcp -m comment --comment "monitoring/prometheus-server:webui" -m tcp --dport 32018 -j KUBE-MARK-MASQ
+  -A KUBE-NODEPORTS -p tcp -m comment --comment "monitoring/prometheus-server:webui" -m tcp --dport 32018 -j KUBE-SVC-B2LATO2XNXKAW5B6
+  ```
+
+  2. 然后转到KUBE-SVC-B2LATO2XNXKAW5B6的链，三个链分别对应三个pod --probability 是概率 
+
+  ```
+  -A KUBE-SVC-B2LATO2XNXKAW5B6 -m comment --comment "monitoring/prometheus-server:webui" -m statistic --mode random --probability 0.33332999982 -j KUBE-SEP-6LNVVXXZ6N5KISWB
+  -A KUBE-SVC-B2LATO2XNXKAW5B6 -m comment --comment "monitoring/prometheus-server:webui" -m statistic --mode random --probability 0.50000000000 -j KUBE-SEP-7JGOJU5MHN5IX7QC
+  -A KUBE-SVC-B2LATO2XNXKAW5B6 -m comment --comment "monitoring/prometheus-server:webui" -j KUBE-SEP-56HYIA4V5KXKNGTU
+  ```
+
+  3. 进入KUBE-SEP-6LNVVXXZ6N5KISWB链中，具体作用是将请求 DNAT到10.253.186.195：9090中
+
+  ```
+  -A KUBE-SEP-6LNVVXXZ6N5KISWB -s 10.253.186.195/32 -m comment --comment "monitoring/prometheus-server:webui" -j KUBE-MARK-MASQ
+  -A KUBE-SEP-6LNVVXXZ6N5KISWB -p tcp -m comment --comment "monitoring/prometheus-server:webui" -m tcp -j DNAT --to-destination 10.253.186.195:9090
+  ```
+
+  4. 其他两个链是同样的道理
+
+  ```
+  -A KUBE-SEP-56HYIA4V5KXKNGTU -s 10.253.41.131/32 -m comment --comment "monitoring/prometheus-server:webui" -j KUBE-MARK-MASQ
+  -A KUBE-SEP-56HYIA4V5KXKNGTU -p tcp -m comment --comment "monitoring/prometheus-server:webui" -m tcp -j DNAT --to-destination 10.253.41.131:9090
+  ```
+
+  ```
+  -A KUBE-SEP-7JGOJU5MHN5IX7QC -s 10.253.239.130/32 -m comment --comment "monitoring/prometheus-server:webui" -j KUBE-MARK-MASQ
+  -A KUBE-SEP-7JGOJU5MHN5IX7QC -p tcp -m comment --comment "monitoring/prometheus-server:webui" -m tcp -j DNAT --to-destination 10.253.239.130:9090
+  ```
+
+  5.  分析完nodePort的工作方式，接下里说一下clusterIP的访问方式。 对于直接访问cluster IP(10.254.162.44)的3306端口会直接跳转到KUBE-SVC-B2LATO2XNXKAW5B6
+
+  ```
+  -A KUBE-SERVICES ! -s 10.254.0.0/16 -d 10.254.248.39/32 -p tcp -m comment --comment "monitoring/prometheus-server:webui cluster IP" -m tcp --dport 9090 -j KUBE-MARK-MASQ
+  -A KUBE-SERVICES -d 10.254.248.39/32 -p tcp -m comment --comment "monitoring/prometheus-server:webui cluster IP" -m tcp --dport 9090 -j KUBE-SVC-B2LATO2XNXKAW5B6
+  ```
+
+  ![](image\kube-proxy-iptables.png)
+
+  - ipvs模式 
+    - https://blog.51cto.com/blief/1745134
+    - ipvs三种模式
+
+
+
+
+
 
 
 

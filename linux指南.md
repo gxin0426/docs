@@ -194,3 +194,10 @@ df -h：显示磁盘分区上可以使用的磁盘空间 #-a    #查看全部文
 free -h：可以显示Linux系统中空闲的、已用的物理内存及swap内存,及被内核使用的buffer
 ~~~
 
+## 13.ipvs iptables
+
+1. 三种工作模式
+
+- nat
+- tun
+- dr
