@@ -164,7 +164,7 @@ $docker rmi $(docker images -f "dangling=true" -q)
 $docker rmi $(docker images -q)
 
 #卷清理
-$docker system df -v #查看容器 对于未被任何容器调用的卷（-v 结果信息中，"LINKS" 显示为 0）
+$docker system df -v #查看卷 对于未被任何容器调用的卷（-v 结果信息中，"LINKS" 显示为 0）
 # 删除所有未被任何容器关联引用的卷：
 $docker volume rm $(docker volume ls -qf dangling=true)
 
@@ -178,7 +178,7 @@ docker rm -v $(docker ps -aq -f status=exited)
 # 删除所有状态为 dead 的容器
 docker rm -v $(docker ps -aq -f status=dead)
 
-$docker ps -s #分析容器占用空间
+$docker ps -s #分析容器占用空间 
 # 如下容器的原始镜像占用了422MB空间，实际运行过程中只占用了2B空间：
 CONTAINERID  IMAGE   COMMAND  CREATED   STATUS  PORTS   NAMES        SIZE
 ac3912      word    ntrypoin      3      11   80/tcp  Web_web_4  2B(virtual422MB)

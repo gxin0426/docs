@@ -880,8 +880,186 @@ sealos clean \
     --node 192.168.1.158 \
     --user root \
     --passwd 123456
+#添加节点
+sealos join \
+    --master 192.168.1.155 \
+    --master 192.168.1.156 \
+    --master 192.168.1.157 \
+    --node 192.168.1.164 \
+    --vip 10.103.97.2 \
+    --user root \
+    --passwd 123456 \
+    --pkg-url /root/kube1.16.0.tar.gz  
 #教程
 https://www.kubernetes.org.cn/5904.html
 https://www.jianshu.com/p/0ce1b53478ce
 ~~~
+
+### 22.kubernetes nfs 外部存储
+
+#### 安装nfs
+
+- NFS是network file system的缩写，即网络文件系统。功能是让客户端通过网络访问不同宿主机磁盘上的数据，主要用在类Unix系统上实现文件共享和存储的一种方法。
+
+- 安装环境
+  - server 192.168.1.156
+  - client 192.168.1.164
+- 服务器端安装nfs
+
+~~~shell
+$ yum install -y nfs-utils #无需安装rpcbind rpcbind是他的一个依赖
+#开启nfs 和 rpcbind
+$ systemctl enable rpcbind
+$ systemctl enable nfs
+$ systemctl start rpcbind 
+$ systemctl start rpcbind
+#当开启防火墙时 需打开rpcbind和nfs服务
+$ firewall-cmd --zone=public --permanent --add-service={rpc-bind,mounted,nfs}
+success
+$ firewall-cmd --reload
+success
+
+#配置共享目录
+$ mkdir /data
+$ chmod 777 /data
+$ vim /etc/exports
+#添加配置
+/data/ 192.168.1.0/24(rw,sync,no_root_squash,no_all_squash)
+
+# /data : 共享目录位置
+# 192.168.1.0/24 : 客户端ip范围
+# rw : 权限设置，可读可写
+# sync : 同步共享目录
+# no_root_squash : 可以使用root授权
+# no_all_squash : 可以使用普通用户授权
+
+#重启nfs
+$ system restart nfs
+
+#查看本地共享目录
+$ showmount -e localhost
+~~~
+
+- 配置client
+
+~~~shell
+#安装nfs
+$ yum install nfs-utils
+#设置开机启动并start
+$ systemctl enable rpcbind
+$ systemctl start rpcbind
+#client不需要打开防火墙 client是请求方 网络连接到server即可 client不需要开启nfs 因为不共享目录
+# 查看server共享目录
+$ showmount -e 192.168.1.156
+Export list for 192.168.1.156:
+/data 192.168.1.0/24
+#创建共享目录
+$ mkdir /data
+#在客户端执行
+$ mount -e nfs 192.168.1.156:/data /data
+
+$mount 
+192.168.1.156:/data on /data type nfs4 (rw,relatime,vers=4.1,rsize=524288,wsize=524288,namlen=255,hard,proto=tcp,port=0,timeo=600,retrans=2,sec=sys,clientaddr=192.168.1.164,local_lock=none,addr=192.168.1.156)
+
+#client自动挂载
+$ vim /etc/fstab
+#
+# /etc/fstab
+# Created by anaconda on Thu May 25 13:11:52 2017
+#
+# Accessible filesystems, by reference, are maintained under '/dev/disk'
+# See man pages fstab(5), findfs(8), mount(8) and/or blkid(8) for more info
+#
+/dev/mapper/cl-root     /                       xfs     defaults        0 0
+UUID=414ee961-c1cb-4715-b321-241dbe2e9a32 /boot                   xfs     defaults        0 0
+/dev/mapper/cl-home     /home                   xfs     defaults        0 0
+/dev/mapper/cl-swap     swap                    swap    defaults        0 0
+192.168.1.156:/data     /data                   nfs     defaults        0 0
+#由于修改了 /etc/fstab，需要重新加载 systemctl
+$systemctl daemon-reload
+~~~
+
+#### kubernetes使用nfs作为外部存储
+
+~~~shell
+#拉取代码
+$ git clone https://github.com/kubernetes-incubator/external-storage.git
+#进入到nfs-client目录下 修改deploy/deployment.yml文件
+#需要将nfs的ip和目录修改
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nfs-client-provisioner
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: nfs-client-provisioner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nfs-client-provisioner
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nfs-client-provisioner
+    spec:
+      serviceAccountName: nfs-client-provisioner
+      containers:
+        - name: nfs-client-provisioner
+          image: quay.io/external_storage/nfs-client-provisioner:latest
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: fuseim.pri/ifs
+            - name: NFS_SERVER
+              value: 192.168.1.156
+            - name: NFS_PATH
+              value: /data
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: 192.168.1.156
+            path: /data
+#storageclass不做修改 或者修改provisioner的名字 需要与deployment中PROVISIONER_NAME一直
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: managed-nfs-storage
+provisioner: fuseim.pri/ifs # or choose another name, must match deployment's env PROVISIONER_NAME'
+parameters:
+  archiveOnDelete: "false"
+#rbac
+$ kubectl apply -f rbac.yml
+#test
+$ kubectl create -f deploy/test-claim.yaml
+#test pod
+$ kubectl create -f deploy/test-pod.yaml
+#在NFS服务器上的共享目录下的卷子目录中检查创建的NFS PV卷下是否有"SUCCESS" 文件
+#删除测试POD
+$ kubectl delete -f deploy/test-pod.yaml
+#删除测试PVC
+$ kubectl delete -f deploy/test-claim.yaml 
+~~~
+
+- 遇到的问题
+
+~~~shell
+#解决mount挂载问题：wrong fs type, bad option, bad superblock on
+#在集群的各个节点安装ntp-utils
+$ yum install -y ntp-utils
+~~~
+
+### 23.kuboard
+
+~~~shell
+$ kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep kuboard-user | awk '{print $1}')
+~~~
+
+
 
