@@ -1058,8 +1058,368 @@ $ yum install -y ntp-utils
 ### 23.kuboard
 
 ~~~shell
+#获取token
 $ kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep kuboard-user | awk '{print $1}')
 ~~~
+
+### 24.go语言开发k8s命令行管理工具
+
+#### 1.k8s资源管理的权限控制 
+
+- 创建自己的sa
+
+~~~shell
+[root@master1 ~]# create sa test-admin
+[root@master1 ~]# kb describe sa test-admin
+Name:                test-admin
+Namespace:           default
+Labels:              <none>
+Annotations:         <none>
+Image pull secrets:  <none>
+Mountable secrets:   test-admin-token-62ncj
+Tokens:              test-admin-token-62ncj
+Events:              <none>
+[root@master1 ~]# kb describe secret test-admin-token-62ncj
+Name:         test-admin-token-62ncj
+Namespace:    default
+Labels:       <none>
+Annotations:  kubernetes.io/service-account.name: test-admin
+              kubernetes.io/service-account.uid: 0ed0d881-28a1-48a1-8cd6-ac54ed84195b
+Type:  kubernetes.io/service-account-token
+Data
+====
+namespace:  7 bytes
+token: ....
+ca.crt:     1029 bytes
+~~~
+
+- 上面已经获得了sa的鉴权信息（token） 通过token测试接口
+
+~~~shell
+[root@master1 ~]# curl 'https://192.168.1.155:6443/healthz/ping' -k -H 'Authorization: eyJhbGciOiJSUzI1NiIsImtpZCI6InNjZkVYem5JSDdQRkR5b0JaR285S0d5ZUVfeWNuT1dkRlVRNl91dWF2QVEifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6InRlc3QtYWRtaW4tdG9rZW4tNjJuY2oiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoidGVzdC1hZG1pbiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjBlZDBkODgxLTI4YTEtNDhhMS04Y2Q2LWFjNTRlZDg0MTk1YiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OnRlc3QtYWRtaW4ifQ.SyR6Uo_ghu-CDuhxpIMb1hpM--alwKdnoLsX0MXW9smpudVs836qD8HhZuyRH4D4TxO6iFhwdYyzl3pp3DjPKIbk1szuzgmKaRUSx4sguYzXEA_gtgfCG-7b-mGsTznsu4VWIAOVLSm9aV0A-NMc2VeSnnAMbIDZJLuAHsxSVPxYnaffU6UJkaHueu2OKMHjuSVBwu5GLYo7fs42GNm4d-wFXVjIyth1dNsiz0IFIZHjIZB3aXsY0cY82waepJa8Zns0wN6BQJvZwWcvm4KN_oeuxjasD-4lZ4F6IhhSzMoLgeKEduyjeFgRRRhRZwNHhrRGo6iLjOVOu8CcyE5EgQ'
+{
+  "kind": "Status",
+  "apiVersion": "v1",
+  "metadata": {
+
+  },
+  "status": "Failure",
+  "message": "forbidden: User \"system:anonymous\" cannot get path \"/healthz/ping\"",
+  "reason": "Forbidden",
+  "details": {
+
+  },
+  "code": 403
+~~~
+
+没有得到我们想要的结果是因为test-admin这个sa并没有被授权，接下来我们将创建一个role并将其授权（rolebinding）给test-admin这个sa。鉴权是指sa的用户密码或者token是否正确，授权是在鉴权成功后，看这个sa是否拥有访问集群资源的权限（看一下rbac）。对资源的操作可以细分为create，update，delete，patch，get，list，watch（前四个对应写，后三个对应读）。
+
+- sa访问集群资源方法
+
+~~~shell
+#设置一个账号鉴权信息
+[root@master1 .kube]# kubectl config set-credentials test-admin --token eyJhbGciOiJSUzI1NiIsImtpZCI6InNjZkVYem5JSDdQRkR5b0JaR285S0d5ZUVfeWNuT1dkRlVRNl91dWF2QVEifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6InRlc3QtYWRtaW4tdG9rZW4tNjJuY2oiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoidGVzdC1hZG1pbiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjBlZDBkODgxLTI4YTEtNDhhMS04Y2Q2LWFjNTRlZDg0MTk1YiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OnRlc3QtYWRtaW4ifQ.SyR6Uo_ghu-CDuhxpIMb1hpM--alwKdnoLsX0MXW9smpudVs836qD8HhZuyRH4D4TxO6iFhwdYyzl3pp3DjPKIbk1szuzgmKaRUSx4sguYzXEA_gtgfCG-7b-mGsTznsu4VWIAOVLSm9aV0A-NMc2VeSnnAMbIDZJLuAHsxSVPxYnaffU6UJkaHueu2OKMHjuSVBwu5GLYo7fs42GNm4d-wFXVjIyth1dNsiz0IFIZHjIZB3aXsY0cY82waepJa8Zns0wN6BQJvZwWcvm4KN_oeuxjasD-4lZ4F6IhhSzMoLgeKEduyjeFgRRRhRZwNHhrRGo6iLjOVOu8CcyE5EgQ
+User "test-admin" set.
+#设置集群的访问信息
+[root@master1 .kube]# kubectl config set-cluster kubernetes --server https://192.168.1.155:6443 --certificate-authority /opt/ca.pem --embed-certs=true
+Cluster "kubernetes" set.
+#创建Context 连接集群和鉴权信息
+[root@master1 .kube]# kubectl config set-context kubernetes-ctx --cluster kubernetes --user test-admin
+Context "kubernetes-ctx" created.
+#使用这个context
+[root@master1 .kube]# kubectl config use-context kubernetes-ctx
+Error from server (Forbidden): pods is forbidden: User "system:serviceaccount:default:test-admin" cannot list pods in the namespace "default"
+~~~
+
+报错的原因是test-admin没有role进行绑定，接下来将创建一个role并且与sa绑定（授权）
+
+- 授权过程
+
+~~~shell
+#创建一个role
+[root@master1 .kube]# kb get role test-admin-role -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: "2019-10-25T07:38:24Z"
+  name: test-admin-role
+  namespace: default
+  resourceVersion: "1583602"
+  selfLink: /apis/rbac.authorization.k8s.io/v1/namespaces/default/roles/test-admin-role
+  uid: 0491fd33-893a-4edc-9edf-87af5a0614d5
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - secrets
+  verbs:
+  - create
+  - update
+  - delete
+  - patch
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - update
+  - delete
+  - patch
+  - get
+  - list
+  - watch
+- apiGroups:
+  - extensions
+  resources:
+  - ingresses
+  verbs:
+  - create
+  - update
+  - delete
+  - patch
+  - get
+  - list
+  - watch
+#创建一个rolebinding
+[root@master1 .kube]# kb get rolebinding test-admin-role-binding -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  creationTimestamp: "2019-10-25T07:43:58Z"
+  name: test-admin-role-binding
+  namespace: default
+  resourceVersion: "1584392"
+  selfLink: /apis/rbac.authorization.k8s.io/v1/namespaces/default/rolebindings/test-admin-role-binding
+  uid: b87f6cf7-608c-4a36-b946-c6401437c2bc
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: test-admin-role
+subjects:
+- kind: ServiceAccount
+  name: test-admin
+  namespace: default
+#使用kubernetes-ctx
+[root@master1 .kube]# kubectl config use-context kubernetes-ctx
+Switched to context "kubernetes-ctx".
+#测试
+[root@master1 .kube]# kb get po
+NAME                                      READY   STATUS    RESTARTS   AGE
+nfs-client-provisioner-7b84c4f769-x5jxb   1/1     Running   1          6d5h
+nginx                                     1/1     Running   1          23h
+~~~
+
+#### 2.开发基于http的应用
+
+~~~go
+package main
+
+import (
+    "bytes"
+    "flag"
+    "fmt"
+    "io/ioutil"
+    "net/http"
+    "strings"
+)
+
+func main() {
+    var host string
+    var port int
+    flag.StringVar(&host, "host", "0.0.0.0", "host to listen")
+    flag.IntVar(&port, "port", 9090, "port to listen")
+    flag.Parse()
+
+    http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+        defer req.Body.Close()
+
+        buffer := bytes.NewBuffer(nil)
+        //print request method and URI
+        buffer.WriteString(fmt.Sprintln(req.Method, req.RequestURI))
+
+        buffer.WriteString(fmt.Sprintln())
+        //print headers
+        for k, v := range req.Header {
+            buffer.WriteString(fmt.Sprintln(k+":", strings.Join(v, ";")))
+        }
+        buffer.WriteString(fmt.Sprintln())
+
+        //print request body
+        reqBody, readErr := ioutil.ReadAll(req.Body)
+        if readErr != nil {
+            buffer.WriteString(fmt.Sprintln(readErr))
+        } else {
+            buffer.WriteString(fmt.Sprintln(string(reqBody)))
+        }
+
+        outputData := buffer.Bytes()
+        fmt.Println(string(outputData))
+        w.Write(outputData)
+    })
+
+    //listen and serve
+    err := http.ListenAndServe(fmt.Sprintf("%s:%d", host, port), nil)
+    fmt.Println("listen err,", err)
+}
+~~~
+
+- 制作镜像
+
+~~~go
+//dockerFile
+FROM alpine:latest
+RUN mkdir -p /home/app/
+ADD ./echo-go /home/app/
+CMD /home/app/echo-go -host 0.0.0.0 -port 9090
+//在打包之前，我们来关注一个小的细节，这个细节将会影响我们的二进制文件是否能够正常启动。在上面的编译过程中，我们直接使用了 go build 的编译方式，不过由于我们的应用里面使用了 net/http 这个库，这个库的编译是需要依赖 CGO 的，由于我们的 alpine:latest 镜像很简洁，所以为了能够让我们的应用能够在这个镜像里面运行起来，我们需要在编译应用的时候，加上一些编译选项
+CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o echo-go echo-go.go
+//打包
+$ tar cvf echo-go.tar Dockerfile echo-go
+//tar tf 
+$ tar tf echo-go.tar
+echo-go
+Dockerfile
+//image-build.go
+package main
+
+import (
+    "context"
+    "flag"
+    "fmt"
+    "io"
+    "os"
+
+    "github.com/docker/docker/api/types"
+    "github.com/docker/docker/client"
+)
+
+const (
+    DockerClientVersion = "1.37"
+)
+
+// 为了突出 Docker 镜像构建的部分功能，我们这里的 Tar 文件使用手动打好的指定的 Tar 包。
+func main() {
+    var tarFile string
+    var imageName string
+    flag.StringVar(&tarFile, "tar-file", "", "tar file to build docker image")
+    flag.StringVar(&imageName, "image-name", "", "dest image name")
+    flag.Parse()
+    if tarFile == "" || imageName == "" {
+        fmt.Println("Err: no tar file or dest image name specified")
+        return
+    }
+
+    // 创建镜像构建的 Client 对象
+    imageBuildClient, err := client.NewClientWithOpts(client.WithVersion(DockerClientVersion))
+    if err != nil {
+        fmt.Println("Err: create docker build client error,", err.Error())
+        return
+    }
+
+    // 打开 Tar 文件
+    tarFileFp, err := os.Open(tarFile)
+    if err != nil {
+        fmt.Println("Err: open tar file error,", err.Error())
+        return
+    }
+
+    defer tarFileFp.Close()
+
+    // 发送构建请求
+    ctx := context.Background()
+
+    imageBuildResp, err := imageBuildClient.ImageBuild(ctx, tarFileFp, types.ImageBuildOptions{
+        Tags:       []string{imageName},
+        Dockerfile: "./Dockerfile",
+    })
+    if err != nil {
+        fmt.Println("Err: send image build request error,", err.Error())
+        return
+    }
+    defer imageBuildResp.Body.Close()
+
+    // 打印构建输出
+    _, err = io.Copy(os.Stdout, imageBuildResp.Body)
+    if err != nil {
+        fmt.Println("Err: read image build response error,", err.Error())
+        return
+    }
+}
+//编译
+$ go build image-build.go
+$ ./image-build -tar-file 'echo-go.tar' -image-name 'gaoxin2020/echo-test/echo-go:1.0'
+//image-push.go
+package main
+
+import (
+    "context"
+    "encoding/base64"
+    "encoding/json"
+    "flag"
+    "fmt"
+    "io"
+    "os"
+
+    "github.com/docker/docker/api/types"
+    "github.com/docker/docker/client"
+)
+
+const (
+    DockerClientVersion = "1.37"
+)
+
+func main() {
+    var imageName string
+    flag.StringVar(&imageName, "image-name", "", "image name to push")
+    flag.Parse()
+    if imageName == "" {
+        fmt.Println("Err: no image name specified")
+        return
+    }
+
+    // 创建镜像推送的 Client 对象
+    imagePushClient, err := client.NewClientWithOpts(client.WithVersion(DockerClientVersion))
+    if err != nil {
+        fmt.Println("Err: create docker push client error,", err.Error())
+        return
+    }
+
+    // 构建镜像推送的鉴权信息
+    imagePushAuthConfig := types.AuthConfig{
+        Username: "xxx",
+        Password: "xxx",
+    }
+    imagePushAuth, _ := json.Marshal(&imagePushAuthConfig)
+
+    // 发送镜像推送的请求
+    ctx := context.Background()
+    imagePushResp, err := imagePushClient.ImagePush(ctx, imageName, types.ImagePushOptions{
+        RegistryAuth: base64.URLEncoding.EncodeToString(imagePushAuth),
+    })
+    if err != nil {
+        fmt.Println("Err: send image push request error,", err.Error())
+        return
+    }
+    defer imagePushResp.Close()
+
+    // 打印镜像推送的输出
+    _, err = io.Copy(os.Stdout, imagePushResp)
+    if err != nil {
+        fmt.Println("Err: read image push response error,", err.Error())
+        return
+    }
+}
+
+
+~~~
+
+
 
 
 

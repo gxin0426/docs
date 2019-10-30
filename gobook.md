@@ -1507,7 +1507,30 @@ if err != nil{
 
 ## 13.常用工具
 
--  pprof是golang程序一个性能分析的工具，可以查看堆栈、cpu信息等 
+#### 1.pprof是golang程序一个性能分析的工具，可以查看堆栈、cpu信息等 
+
+#### 2.go常用插件
+
+~~~go
+go get -u -v golang.org/x/tools/cmd/godoc
+go get -u -v github.com/nsf/gocode
+go get -u -v github.com/golang/lint/golint
+go get -u -v github.com/lukehoban/go-outline
+go get -u -v github.com/rogpeppe/godef
+go get -u -v sourcegraph.com/sqs/goreturns
+go get -u -v golang.org/x/tools/cmd/gorename
+go get -u -v golang.org/x/tools/cmd/guru
+go get -u -v github.com/tpng/gopkgs
+go get -u -v github.com/newhook/go-symbols
+go get -u -v github.com/derekparker/delve/cmd/dlv
+go get -u -v github.com/josharian/impl
+go get -u -v github.com/cweill/gotests/gotests
+go get -u -v github.com/lukehoban/go-find-references
+go get -u -v github.com/fatih/gomodifytags
+go get -u -v github.com/haya14busa/goplay/cmd/goplay
+~~~
+
+
 
  
 
