@@ -105,6 +105,35 @@ API Server提供了k8s各类资源对象的增删改查及watch等http rest接�
     - https://blog.51cto.com/blief/1745134
     - ipvs三种模式
 
+# 6.kubernetes 源码结构
+
+## 1.代码结构
+
+- pkg目录：主体代码 里面实现了kubernetes的主体逻辑
+- cmd目录：kubernetes所有后台进程的代码 主要是各个子模块的启动代码 具体逻辑在pkg下
+- plugin目录： 主要是kube-schedule和一些插件
+
+### 1.pkg
+
+- api： api主要包括最新版本的Rest api接口的类 并提供数据格式转换工具类 对应版本号文件夹下的文件描述了特定的版本如何序列化存储和网络
+- client： k8s中公用的客户端部分 实现对对象的具体操作crud
+- cloudprovider： k8s提供对aws azure gce mesos 等云提供商提供了接口支持 目前包括负载均衡 实例 zone信息 路由信息等
+- controller：k8s controller主要包括各个controller实现逻辑 为各类资源如 replication endpoint node 等的增删改查等逻辑提供派发和执行
+- credentialprovider： 为docker镜像仓库贡献者提供权威认证
+- generated： generated包是所有生成的文件的目标文件 一般这里面的文件日常是不进行改动的
+- kubectl： 是命令行工具
+- kubelet： 负责node层的pod管理 完成pod及容器的创建 执行pod的删除同步操作
+- master： 负责集群中master节点的运行管理 api安装 各个组件的于小宁端口分配 noderegistry podregistry等创建工作
+- runtime： 实现不同版本api之间的适配 实现不同api版本之间数据结构的转换
+
+### 2. cmd
+
+- 包括k8s所有后台进程的代码 apiserver controller manager proxy kubelet 等进程
+
+### 3. plugin
+
+- 主要包括调度模块的代码实现 用于执行具体的scheduler的调度工作
+
 
 
 

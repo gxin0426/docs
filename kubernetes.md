@@ -680,7 +680,7 @@ spec:
 kubectl taint nodes <node-name> nodetype=clustermaster:PreferNoSchedule
 kubectl taint nodes <node-name> nodetype=clustermaster:NoSchedule
 kubectl taint nodes <node-name> nodetype=clustermaster:NoExecute
-
+#去除taint
 kubectl taint nodes <node-name> nodetype:PreferNoSchedule-
 kubectl taint nodes <node-name> nodetype:NoSchedule-
 kubectl taint nodes <node-name> nodetype:NoExecute-
@@ -857,7 +857,7 @@ $ sudo yum install -y yum-utils \
 $ sudo yum-config-manager \
     --add-repo \
     https://download.docker.com/linux/centos/docker-ce.repo
-$ sudo yum install docker-ce-18.09.1 docker-ce-cli-18.09.1 containerd.io
+$ sudo yum install docker-ce-18.09.1 docker-ce-cli-18.09.1 containerd.io -y
 
 
 #安装sealos
@@ -871,7 +871,7 @@ sealos init \
     --user root \
     --passwd 123456 \
     --pkg-url /root/kube1.16.0.tar.gz  \
-    --version v1.16.0               
+    --version v1.16.0
 #清理
 sealos clean \
     --master 192.168.1.155 \
@@ -934,20 +934,22 @@ $ vim /etc/exports
 # no_all_squash : 可以使用普通用户授权
 
 #重启nfs
-$ system restart nfs
+$ systemctl restart nfs
 
 #查看本地共享目录
 $ showmount -e localhost
+Export list for localhost:
+/data 192.168.1.0/24
 ~~~
 
 - 配置client
 
 ~~~shell
 #安装nfs
-$ yum install nfs-utils
+$ yum install nfs-utils -y
 #设置开机启动并start
 $ systemctl enable rpcbind
-$ systemctl start rpcbind
+$ systemctl restart rpcbind
 #client不需要打开防火墙 client是请求方 网络连接到server即可 client不需要开启nfs 因为不共享目录
 # 查看server共享目录
 $ showmount -e 192.168.1.156
@@ -955,8 +957,9 @@ Export list for 192.168.1.156:
 /data 192.168.1.0/24
 #创建共享目录
 $ mkdir /data
+$ chmod 777 /data
 #在客户端执行
-$ mount -e nfs 192.168.1.156:/data /data
+$ mount -t nfs 192.168.1.156:/data /data
 
 $mount 
 192.168.1.156:/data on /data type nfs4 (rw,relatime,vers=4.1,rsize=524288,wsize=524288,namlen=255,hard,proto=tcp,port=0,timeo=600,retrans=2,sec=sys,clientaddr=192.168.1.164,local_lock=none,addr=192.168.1.156)
@@ -1069,7 +1072,7 @@ $ kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | g
 - 创建自己的sa
 
 ~~~shell
-[root@master1 ~]# create sa test-admin
+[root@master1 ~]# kb create sa test-admin
 [root@master1 ~]# kb describe sa test-admin
 Name:                test-admin
 Namespace:           default
@@ -1415,11 +1418,837 @@ func main() {
         return
     }
 }
-
-
 ~~~
 
+#### 3.cobra框架
 
+~~~go
+// cobra.Command 的定义
+type Command struct {
+    // Use 表示用一句话来描述这个命令作用，这段话的第一个单词会被作为这个命令的名称
+    // 这个设置在子命令中生效，对于根命令则没有意义
+    Use string
 
+    // Alias 可以用来给子命令定义别名，除了使用 Use 中的第一个单词作为子命令外，你还可以使用这个 Alias
+    // 里面定义的任何一个名称作为子命令名称
+    Aliases []string
 
+    // SuggestFor 定义一组提示命令，当输入匹配其中任何一个命令的时候，会提示是否希望输入的为 echo 命令 
+    SuggestFor []string
+
+    // Short 是用来在帮助信息位置显示的简短命令帮助
+    Short string
+
+    // Long 是用来在使用命令 'help <this-command>' 显示帮助信息时显示的长文字
+    Long string
+
+    // Example 用来定义子命令使用的具体示例，可以在里面定义多行不同的命令使用样例，供用户参考，这一点在
+    // Kubectl 命令中体现的非常明显，因为 Kubectl 命令很复杂，参数也很多，所有样例会极大方便用户
+    Example string
+
+    // ValidArgs 是一组可用在 Bash 补全中的合法的非选项参数
+    ValidArgs []string
+
+    // Args 表示期望的参数
+    Args PositionalArgs
+
+    // ArgAliases 是 ValidArgs 的一组别名
+    // 这些参数不会在 Bash 补全中提示给用户，但是如果手动输入的话，也是允许的
+    ArgAliases []string
+
+    // BashCompletionFunction 是 Bash 自动补全生成器使用的自定义函数
+    BashCompletionFunction string
+
+    // Deprecated 不为空的时候，在命令执行时都会提示命令已废弃，并且输出这段文字
+    Deprecated string
+
+    // Hidden 参数设置为 true 的时候，将无法在命令帮助列表中看到这个命令，但是实际这个命令仍然是可用的，一般用于
+    // 对命令做向下兼容的处理，在未来的版本中如果这个命令会废弃，那么先让它隐藏起来会比直接删除较好
+    Hidden bool
+
+    // Annotations 定义一些键值对，应用可以用这些注解来分组命令，主要用于标注上面的分组
+    Annotations map[string]string
+
+    // Version 定义这个命令的版本。当 Version 值不为空，且命令没有定义 version 选项的时候，会自动给这个命令增加一个
+    // boolean 类型，名称为 version 的选项。如果指定这个选项，就会输出这里 Version 的值。
+    Version string
+
+    //  下面的这组 Run 函数执行顺序为：
+    //   * PersistentPreRun()
+    //   * PreRun()
+    //   * Run()
+    //   * PostRun()
+    //   * PersistentPostRun()
+    // 所有的函数传入的参数都相同，都是命令名称之后的参数
+
+    // PersistentPreRun 这个命令的子命令都将继承并执行这个函数
+    PersistentPreRun func(cmd *Command, args []string)
+
+    // PersistentPreRunE 和 PersistentPreRun 一样，但是遇到错误时可以返回一个错误
+    // 一旦这个函数返回的 error 不为 nil，那么执行就中断了。所以你可以在这个函数里面
+    // 做诸如权限验证等等全局性的工作
+    PersistentPreRunE func(cmd *Command, args []string) error
+
+    // PreRun 这个命令的子命令不会继承和运行这个函数
+    PreRun func(cmd *Command, args []string)
+
+    // PreRunE 和 PreRun 一样，但是遇到错误时可以返回一个错误
+    // 一旦这个函数返回的 error 不为 nil，那么执行就中断了。所以你可以在这个函数里面
+    // 做一些和该命令相关的输入参数检测之类的工作
+    PreRunE func(cmd *Command, args []string) error
+
+    // Run 命令核心工作所在的函数，大多数情况下只实现这个命令即可
+    Run func(cmd *Command, args []string)
+
+    // RunE 和 Run 一样，但是遇到错误时可以返回一个错误
+    // 一旦这个函数返回的 error 不为 nil，那么执行就中断了。
+    RunE func(cmd *Command, args []string) error
+
+    // PostRun 在 Run 函数执行之后执行
+    PostRun func(cmd *Command, args []string)
+
+    // PostRunE 在 PostRun 之后执行，但是可以返回一个错误
+    // 一旦这个函数返回的 error 不为 nil，那么执行就中断了。
+    PostRunE func(cmd *Command, args []string) error
+
+    // PersistentPostRun 在 PostRun 之后执行，这个命令的子命令都将继承并执行这个函数
+    PersistentPostRun func(cmd *Command, args []string)
+
+    // PersistentPostRunE 和 PersistentPostRun 一样，但是可以返回一个错误
+    // 一旦这个函数返回的 error 不为 nil，那么执行就中断了。
+    PersistentPostRunE func(cmd *Command, args []string) error
+
+    // SilenceErrors 设置为 true 时可以在命令执行过程中遇到任何错误时，不显示错误
+    SilenceErrors bool
+
+    // SilenceUsage 设置为 true 时可以在命令执行遇到输入错误时，不显示使用方法
+    SilenceUsage bool
+
+    // DisableFlagParsing 设置为 true 时将禁用选项解析功能，这样命令之后所有的内容
+    // 都将作为参数传递给命令
+    DisableFlagParsing bool
+
+    // DisableAutoGenTag 在生成命令文档的时候是否显示 gen tag
+    DisableAutoGenTag bool
+
+    // DisableFlagsInUseLine 设置为 true 的时候，将不会在命令帮助信息或者文档中显示命令支持的选项
+    DisableFlagsInUseLine bool
+
+    // DisableSuggestions 禁用命令提示
+    DisableSuggestions bool
+
+    // SuggestionsMinimumDistance 定义显示命令提示的最小的 Levenshtein 距离
+    SuggestionsMinimumDistance int
+
+    // TraverseChildren 在执行该命令子命令前，解析所有父命令的选项
+    TraverseChildren bool
+
+    //FParseErrWhitelist 定义可以被忽略的解析错误
+    FParseErrWhitelist FParseErrWhitelist
+}
+~~~
+
+- 简单模板
+
+~~~go
+//模板1
+package main
+import (
+    "fmt"
+    "strings"
+
+    "github.com/spf13/cobra"
+)
+func main() {
+    // 定义一个命令，直接输出命令行参数
+    echoCmd := cobra.Command{
+        // 命令名称
+        Use: "echo",
+        // 命令执行过程
+        Run: func(cmd *cobra.Command, args []string) { 
+            fmt.Println(strings.Join(args, " "))
+        }, 
+    }
+
+    // 执行命令 
+    echoCmd.Execute() 
+}
+//模板2 常用的命令模板
+package main
+import (
+    "fmt"
+    "strings"
+    "github.com/spf13/cobra"
+)
+func main() {
+    rootCmd := cobra.Command{
+        //定义这个工具默认输出帮助
+        Run: func(cmd *cobra.Command, args []string){
+            cmd.Help()
+        },
+    }
+    //定义一个子命令 直接输出命令行参数
+    echoCmd := cobra.Command{
+        //子命令描述，第一个单词作为子命令名称
+        Use: "echo inputs",
+        //子命令别名
+        Aliases: []string{
+            "copy",
+            "repeat",
+        },
+        // 命令提示，默认情况如果输入的子命令不存在会提示 unknown cmd，
+        // 但是如果定义了 SuggestFor 的情况下，如果输入的命令不存在，会去 SuggestFor
+        // 里面查找是否有匹配的字符串，如果有，则提示是否期望输入的是 echo 命令
+        SuggestFor: []string{
+            "ech","cp",
+        },
+        DisableSuggestions: true,
+        SuggestionsMinimumDistance: 2,
+        DisableFlagsInUseLine: true,
+        // 简单扼要概括下命令的用途
+        Short: "echo is a command",
+        // 想说什么都在这里说吧，越详细越好，可以使用 `` 来跨行输入
+        Long: `echo is a command`,
+        // 当你在新版本废弃这个命令的时候，可以先隐藏，让用户优先使用替代品或者看不到，
+        // 但是处于向下兼容目的，这个命令仍然是可用的，只是在帮助列表里面看不到
+        //Hidden: true,
+
+        // 当你需要废弃这个命令的时候设置。废弃的意思意味着未来版本可能删除这个命令。
+        // 标注为废弃的命令在执行的时候，都会打印命令已废弃的提示信息以及这个设置的提示信息。
+        //Deprecated: "will be deleted in version 2.0",
+
+        //注解，用于代码层面的命令分组 不会显示在命令行输入中
+        Annotations: map[string]string{
+            "group": "user",
+            "require-auth": "none",
+        },
+        SilenceErrors: true,
+        //SilenceUsage:  true,
+        // Version 定义版本
+        Version: "1.0.0",
+        // 是否禁用选项解析
+        //DisableFlagParsing: true,
+
+        //DisableAutoGenTag: true,
+
+        // PersistentPreRun: func(cmd *cobra.Command, args []string) {
+        //     fmt.Println("hahha! let me check echk")
+        // },
+        PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+            //    return errors.New("invalid parameter")
+            return nil
+        },
+        
+        // 子命令执行过程
+        // Run: func(cmd *cobra.Command, args []string) {
+        //     fmt.Println(strings.Join(args, " "))
+        // },
+        RunE: func(cmd *cobra.Command, args []string) error{
+            fmt.Println(strings.Join(args," "))
+            return nil
+        },
+        PostRun: func(cmd *cobra.Command, args []string){
+            fmt.Println(" i am a post run")
+        },
+    }
+    //添加子命令根命令
+    rootCmd.AddCommand(&echoCmd)
+    //执行根命令
+    rootCmd.Execute()
+}
+~~~
+
+cobra支持两种选项 一种是命令自身的选项 另一种是父命令继承过来的选项 命令自身的选项可以通过函数Flags来添加 而继承过来的选项则是父命令通过PersistentFlags设置的选项  例如
+
+~~~shell
+$ kb -n default get pods -l "label" -o json
+~~~
+
+上面的命令中 -n是命令kb的选项 这个命令不仅提供给get 也提供给其他命令使用 每个子命令应该继承-n这个选项
+
+-o 和 -l 是get 自身的选项 代码如下
+
+~~~go
+package main
+
+import(
+    "fmt"
+    "github.com/spf13/cobra"
+)
+var namespace string
+func main(){
+ 
+    rootCmd := cobra.Command{
+        Use : "kb",
+    }
+    //添加全局的选项 所有的子命令都可以继承
+    rootCmd.PersistentFlags().StringVarP(&namespace,"namespace","n","","if present, the namespace scope for this hahahaha")
+    
+    //一级子命令 get
+    var outputFormat string
+    var outputLabel string
+    getCmd := cobra.Command{
+        Use : "get",
+        Run : func(cmd *cobra.Command, args []string){
+            fmt.Println("print flags")
+            fmt.Printf("Flags: namespace=[%s], selector=[%s], outputformat=[%s]\n", namespace, outputLabel, outputFormat)
+            fmt.Println("Print args...")
+            for _, arg := range args {
+                fmt.Println("args:",arg )
+            }
+        },
+    }
+        //添加命令选项 仅子命令可用
+    //func StringVarP(p *string, name, shorthand string, value string, usage string)
+    getCmd.PersistentFlags().StringVarP(&outputFormat,"output","o","","qqqqqq")
+    getCmd.PersistentFlags().StringVarP(&outputLabel,"label","l","","eeeeee")
+
+    var teststr string
+    testCmd := cobra.Command{
+        Use : "test",
+        Run : func(cmd *cobra.Command, args []string){
+            fmt.Println("print flags")
+            fmt.Printf("Flags: namespace=[%s], selector=[%s], outputformat=[%s], teststr=[%s]\n", namespace, outputLabel, outputFormat, teststr)
+            fmt.Println("Print args...")
+            for _, arg := range args {
+                fmt.Println("args:",arg )
+            }
+        
+        },
+    }
+    testCmd.Flags().StringVarP(&teststr,"test","t","","")
+    //组装命令
+    rootCmd.AddCommand(&getCmd)
+    getCmd.AddCommand(&testCmd)
+    rootCmd.Execute()
+}
+~~~
+
+#### 4.pod源码
+
+1. 定义一个pod 一般需要：pod的名称和标签 镜像 对外暴露的端口 启动命令和工作目录
+
+~~~go
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+// Pod 是一组可以在集群中运行的容器。通过 Kubernetes 的客户端创建，然后调度到集群中的机器上面运行。
+type Pod struct {
+    // 资源 API 元数据
+    metav1.TypeMeta `json:",inline"`
+    // 资源标准的元数据
+    metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+    // Pod 的期望规格
+    Spec PodSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+
+    // Pod 的状态，该状态由 Kubernetes 系统自动更新，为只读信息
+    Status PodStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+}
+~~~
+
+ 我们看到，Pod 的组成部分有四块。其中 metav1.TypeMeta 和 metav1.ObjectMeta 保存了 Pod  的基础元信息，这两个结构体是所有的 Kubernetes 对象都会有的。Pod 自身的规格信息需要通过 Spec 字段来设置。而 Status  字段则保存着系统最近一次更新的 Pod 的状态信息，这个信息是只读信息，所以我们无法设置它。 
+
+ 在研究 Pod 的 Spec 之前，先看一下所有 Kubernetes 对象都会有的两个属性。首先看下 metav1.TypeMeta 的结构： 
+
+~~~go
+// $GOPATH/src/k8s.io/apimachinery/pkg/apis/meta/v1/types.go
+// TypeMeta 描述了请求和回复中该 Kubernetes 对象的类型和 API 版本
+type TypeMeta struct {
+    // Kind 用来表示资源的类型，比如 Pod、Service、Ingress、Deployment 等
+    Kind string `json:"kind,omitempty" protobuf:"bytes,1,opt,name=kind"`
+
+    // APIVersion 定义了操作该资源的 API 的版本
+    APIVersion string `json:"apiVersion,omitempty" protobuf:"bytes,2,opt,name=apiVersion"`
+}
+~~~
+
+ 再看下 metav1.ObjectMeta 的结构，这个结构的内容会比较多，基本上用来描述资源自身的一些属性： 
+
+~~~go
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+// ObjectMeta 是所有的持久化的 Kubernetes 资源都拥有的属性
+type ObjectMeta struct {
+    // Name 在命名空间中必须是唯一的，在创建资源时必须提供。
+    Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+
+    // 仅当没有指定 Name 的时候生效。
+    // 在没有指定 Name 的情况下，服务端使用这个参数作为生成名称的前缀。
+    GenerateName string `json:"    ,omitempty" protobuf:"bytes,2,opt,name=generateName"`
+
+    // 资源所在命名空间，无法更新
+    Namespace string `json:"namespace,omitempty" protobuf:"bytes,3,opt,name=namespace"`
+
+    // SelfLink 表示该资源的 URL 只读
+    SelfLink string `json:"selfLink,omitempty" protobuf:"bytes,4,opt,name=selfLink"`
+
+    // UID 表示该对象基于时空的唯一性ID，由服务端在对象生成成功后创建，只读属性
+    UID types.UID `json:"uid,omitempty" protobuf:"bytes,5,opt,name=uid,casttype=k8s.io/kubernetes/pkg/types.UID"`
+
+    // 该值表示资源在系统内部的版本，属于不可修改的隐藏值。
+    ResourceVersion string `json:"resourceVersion,omitempty" protobuf:"bytes,6,opt,name=resourceVersion"`
+
+    // Generation 是一个序列号，表示期望状态的某个具体的版本，由系统填充，只读属性
+    Generation int64 `json:"generation,omitempty" protobuf:"varint,7,opt,name=generation"`
+
+    // CreationTimestamp 是资源创建成功的服务端时间，只读属性
+    CreationTimestamp Time `json:"creationTimestamp,omitempty" protobuf:"bytes,8,opt,name=creationTimestamp"`
+
+    // DeletionTimestamp 是系统设置的资源将被删除的时间。当用户请求以优雅的方式删除资源的时候，服务端才会去设置这个值。
+    DeletionTimestamp *Time `json:"deletionTimestamp,omitempty" protobuf:"bytes,9,opt,name=deletionTimestamp"`
+
+    // 只读属性。当设置了 DeletionTimestamp 时生效，表示资源从系统删除所允许的宽限时间。
+    DeletionGracePeriodSeconds *int64 `json:"deletionGracePeriodSeconds,omitempty" protobuf:"varint,10,opt,name=deletionGracePeriodSeconds"`
+
+    // 资源的标签，用来当作资源的选择器使用。
+    Labels map[string]string `json:"labels,omitempty" protobuf:"bytes,11,rep,name=labels"`
+
+    // 资源的注解，提供给外部的系统使用。
+    Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,12,rep,name=annotations"`
+
+    // 该资源所依赖的对象列表。如果这个列表里面所有的对象都被删除了，那么这个对象也会被回收掉。
+    OwnerReferences []OwnerReference `json:"ownerReferences,omitempty" patchStrategy:"merge" patchMergeKey:"uid" protobuf:"bytes,13,rep,name=ownerReferences"`
+
+    // 在对象创建的时候，用来设置一些系统参数的控制器列表。这个列表里面的条目表示还没有对该对象进行应用的控制器。如果列表为空，
+    // 则表示该对象已经被初始化了。
+    Initializers *Initializers `json:"initializers,omitempty" protobuf:"bytes,16,opt,name=initializers"`
+
+    // 在ZZ+资源删除之前，必须为空。每个条目表示一个负责从列表中删除资源的组件。当 deletionTimestamp 不为空的时候，该列表的条目无法删除。
+    Finalizers []string `json:"finalizers,omitempty" patchStrategy:"merge" protobuf:"bytes,14,rep,name=finalizers"`
+
+    // 资源所属的集群名称，暂时无用
+    ClusterName string `json:"clusterName,omitempty" protobuf:"bytes,15,opt,name=clusterName"`
+}
+~~~
+
+ 在 metav1.ObjectMeta 中，我们目前主要需要关注的是 Name 和 Labels。因为第一个表示了该对象的唯一性名称，第二个表示了该对象的标签属性，这个标签属性在其它资源对象引用该对象时使用。 
+
+ 接下来，让我们详细地看一下定义 Pod 的 PodSpec 的内容： 
+
+~~~go
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+// PodSpec 描述了生成一个 Pod 所需要的参数
+type PodSpec struct {
+    // 可以挂载到 Pod 中容器的卷
+    Volumes []Volume `json:"volumes,omitempty" patchStrategy:"merge,retainKeys" patchMergeKey:"name" protobuf:"bytes,1,rep,name=volumes"`
+
+    // Pod 的初始化容器。初始化容器是在主容器启动之前依次执行的。如果任何一个初始化容器执行失败了，那么 Pod 的启动就被认为是失败了。
+    // 如果 Pod 启动失败，会按照 RestartPolicy 所指定的策略进行下一步处理。初始化容器的名称和主容器的名称在所有的容器中必须都是唯一的。
+    // 初始化容器可以没有生命循环的操作 Readiness 探针或者 Liveness 探针。
+    // 初始化容器的资源需求在调度期间是通过查找每个资源的最大的需求/限制，然后使用最大值或者正常主容器所需值的总和。
+    // 初始化容器目前无法更新或者删除。
+    InitContainers []Container `json:"initContainers,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,20,rep,name=initContainers"`
+
+    // Pod 中的一组容器，当前不支持删除或者更新。
+    Containers []Container `json:"containers" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=containers"`
+
+    // Pod 中容器的重启策略。可选值为 Always、OnFailure、Never。默认为 Always。
+    RestartPolicy RestartPolicy `json:"restartPolicy,omitempty" protobuf:"bytes,3,opt,name=restartPolicy,casttype=RestartPolicy"`
+
+    // Pod 用来优雅地终止执行所需要的时间。可以通过 DELETE 请求来缩短这个时间。
+    // 这个值必须是非负整数。当设置为 0 的时候，表示立即删除 Pod。
+    // 如果这个值设置为 nil，那么就使用默认的优雅退出时间。默认值为 30 秒。
+    // 优雅退出的时间指的是 Pod 中运行的进程收到终止执行信号后到最终被 KILL 信号强制终止时所经历的时间。
+    // 把这个值设置的比你的进程清理时间稍微长一点。
+    TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty" protobuf:"varint,4,opt,name=terminationGracePeriodSeconds"`
+
+    // 这个值是相对于 Pod 的 StartTime 到最终被系统主动标记为失败并且 KILL 相关容器所经历的时间。必须为正整数。
+    ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty" protobuf:"varint,5,opt,name=activeDeadlineSeconds"`
+
+    // Pod 中的 DNS 策略。默认为 ClusterFirst。
+    // 可选值为 ClusterFirstWithHostNet，ClusterFirst，Default 或者 None。
+    DNSPolicy DNSPolicy `json:"dnsPolicy,omitempty" protobuf:"bytes,6,opt,name=dnsPolicy,casttype=DNSPolicy"`
+
+    // 当需要把 Pod 指定分配到某些 Node 上时设置的 Node 选择标签。
+    NodeSelector map[string]string `json:"nodeSelector,omitempty" protobuf:"bytes,7,rep,name=nodeSelector"`
+
+    // 该 Pod 中所使用的 ServiceAccount 的名称。
+    ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,8,opt,name=serviceAccountName"`
+
+    // 设置是否应该自动挂载 ServiceAccount 的 Secret Token 到容器中。
+    AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty" protobuf:"varint,21,opt,name=automountServiceAccountToken"`
+
+    // 该参数指定将 Pod 调度到某个 Node 上。如果不为空，那么这个 Pod 就会直接被调度到该 Node，假定该 Node 满足资源要求。
+    NodeName string `json:"nodeName,omitempty" protobuf:"bytes,10,opt,name=nodeName"`
+
+    // 设置该 Pod 是否需要共享 Host 的网络空间，默认为 false。
+    // 如果该参数设置为 true，那么所有使用到的端口必须显式指定。
+    HostNetwork bool `json:"hostNetwork,omitempty" protobuf:"varint,11,opt,name=hostNetwork"`
+
+    // 设置 Pod 是否共享 Host 的 PID 空间，默认为 false。
+    HostPID bool `json:"hostPID,omitempty" protobuf:"varint,12,opt,name=hostPID"`
+
+    // 设置 Pod 是否共享 Host 的 IPC 空间，默认为 false。
+    HostIPC bool `json:"hostIPC,omitempty" protobuf:"varint,13,opt,name=hostIPC"`
+
+    // 在 Pod 中的所有容器间共享一个进程空间。当指定这个参数时，Pod 中的所有容器将可以查看同 Pod 中其它容器的进程或者向它们发信号。
+    // 另外在指定该参数时，每个容器中的第一个进程的 PID 将不再是1。HostPID 和 ShareProcessNamespace 不可以同时指定。
+    ShareProcessNamespace *bool `json:"shareProcessNamespace,omitempty" protobuf:"varint,27,opt,name=shareProcessNamespace"`
+
+    // 保存 Pod 级别的安全属性和一些常见的容器设置。默认为空。
+    SecurityContext *PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,14,opt,name=securityContext"`
+
+    // 指定拉取镜像所需要的 Secret。当镜像所在的镜像空间为私有空间的时候，需要指定拉取的 Secret，否则无法拉取镜像。
+    ImagePullSecrets []LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
+
+    // 指定 Pod 的主机名，如果不指定，Pod 将采用系统定义的默认的主机名。
+    Hostname string `json:"hostname,omitempty" protobuf:"bytes,16,opt,name=hostname"`
+
+    // 如果指定，那么 Pod 的完整主机名是 <hostname>.<subdomain>.<pod namespace>.svc.<cluster domain> 。
+    // 如果不指定，则 Pod 将不会有 Domain Name。
+    Subdomain string `json:"subdomain,omitempty" protobuf:"bytes,17,opt,name=subdomain"`
+
+    // 指定 Pod 的调度约束
+    Affinity *Affinity `json:"affinity,omitempty" protobuf:"bytes,18,opt,name=affinity"`
+
+    // 指定 Pod 的调度器名称，如果不指定，则使用默认的调度器。
+    SchedulerName string `json:"schedulerName,omitempty" protobuf:"bytes,19,opt,name=schedulerName"`
+
+    // 用来指定一组 Pod 可容忍的污点
+    Tolerations []Toleration `json:"tolerations,omitempty" protobuf:"bytes,22,opt,name=tolerations"`
+
+    // HostAliases 指定一组 Host 和 IP 的映射关系，这些映射会被注入到 Pod 的 /etc/hosts 文件中。
+    // 这个设置只对非 hostNetwork 的 Pod 生效。
+    HostAliases []HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,23,rep,name=hostAliases"`
+
+    // 指定 Pod 的优先级。其中 system-node-critical 和 system-cluster-critical 是两个特殊的关键字用来表示最高的优先级。
+    // 如果需要指定其它的优先级，必须定义一个指定名称的 PriorityClass 的对象。如果不指定，那么 Pod 采用默认的优先级或者如果
+    // 没有默认的优先级，那么就是 0。
+    PriorityClassName string `json:"priorityClassName,omitempty" protobuf:"bytes,24,opt,name=priorityClassName"`
+
+    // 指定 Pod 的优先级。有多个系统组件会使用到这个参数来决定 Pod 的优先级。
+    Priority *int32 `json:"priority,omitempty" protobuf:"bytes,25,opt,name=priority"`
+
+    // 指定 Pod 的 DNS 参数。这里指定的 DNS 参数会和 DNSPolicy 生成的 DNS 配置合并在一起。
+    DNSConfig *PodDNSConfig `json:"dnsConfig,omitempty" protobuf:"bytes,26,opt,name=dnsConfig"`
+
+    // 如果指定，所有的 ReadinessGate 都会被检查来确认 Pod 是否就绪。Pod 就绪必须是在所有的容器都已就绪，并且所有 Readiness Gate
+    // 中所指定的条件都为 true 的情况下才算就绪。
+    ReadinessGates []PodReadinessGate `json:"readinessGates,omitempty" protobuf:"bytes,28,opt,name=readinessGates"`
+
+    // RuntimeClassName 指 node.k8s.io 组中的一个 RuntimeClass 的对象。必须使用这个对象来运行 Pod。如果指定的值没有对应的
+    // RuntimeClass，那么这个 Pod 就不会运行。如果这个值没有设置或者设置为空字符串，那么会采用“遗留”的 RuntimeClass。这个对象是
+    // 一个隐式的，使用默认的 Runtime Handler 定义的空对象。
+    RuntimeClassName *string `json:"runtimeClassName,omitempty" protobuf:"bytes,29,opt,name=runtimeClassName"`
+
+    // 设置是否关于 Service 的信息应该被注入到 Pod 的环境变量中。
+    EnableServiceLinks *bool `json:"enableServiceLinks,omitempty" protobuf:"varint,30,opt,name=enableServiceLinks"`
+}
+~~~
+
+ 在上面的内容中，我们目前可以关注其中的一部分，剩余的部分大家可以参考注释，然后在课后做练习的时候自行设置，调试看看效果。我们目前关注一个 Pod 的最小组成部分，即名称、标签和容器。名称和标签都属于 metadata，在上面已经看到过了，我们需要关注下 Pod 里面的容器即  Container 的定义。 
+
+~~~go
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+// 在 Pod 中运行的一个容器的定义
+type Container struct {
+    // 容器的名称，Pod 中每个容器的名称必须是在 Pod 层面为唯一的，无法更新
+    Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+
+    // Docker 镜像的名称
+    Image string `json:"image,omitempty" protobuf:"bytes,2,opt,name=image"`
+
+    // 容器的启动命令。这些命令不是在 shell 中执行的。如果这个参数没有指定，则使用 Docker 镜像的 ENTRYPOINT。
+    Command []string `json:"command,omitempty" protobuf:"bytes,3,rep,name=command"`
+
+    // 容器启动命令的参数列表。如果该参数没有指定，则使用镜像的 CMD 指定的值。
+    Args []string `json:"args,omitempty" protobuf:"bytes,4,rep,name=args"`
+
+    // 容器启动命令的工作目录
+    WorkingDir string `json:"workingDir,omitempty" protobuf:"bytes,5,opt,name=workingDir"`
+
+    // 设置容器允许暴露的端口，如果该参数不指定，在容器内部监听 0.0.0.0 地址的端口是默认暴露的。
+    Ports []ContainerPort `json:"ports,omitempty" patchStrategy:"merge" patchMergeKey:"containerPort" protobuf:"bytes,6,rep,name=ports"`
+
+    // 容器内获取环境变量的来源
+    EnvFrom []EnvFromSource `json:"envFrom,omitempty" protobuf:"bytes,19,rep,name=envFrom"`
+
+    // 容器中设置的一组环境变量
+    Env []EnvVar `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,7,rep,name=env"`
+
+    // 该容器所需要的资源
+    Resources ResourceRequirements `json:"resources,omitempty" protobuf:"bytes,8,opt,name=resources"`
+
+    // 挂载到容器文件系统上的卷
+    VolumeMounts []VolumeMount `json:"volumeMounts,omitempty" patchStrategy:"merge" patchMergeKey:"mountPath" protobuf:"bytes,9,rep,name=volumeMounts"`
+
+    // 定义容器使用的一组块设备
+    VolumeDevices []VolumeDevice `json:"volumeDevices,omitempty" patchStrategy:"merge" patchMergeKey:"devicePath" protobuf:"bytes,21,rep,name=volumeDevices"`
+
+    // 容器是否存活的周期性检查探针
+    LivenessProbe *Probe `json:"livenessProbe,omitempty" protobuf:"bytes,10,opt,name=livenessProbe"`
+
+    // 容器服务是否就绪的周期性检查探针
+    ReadinessProbe *Probe `json:"readinessProbe,omitempty" protobuf:"bytes,11,opt,name=readinessProbe"`
+
+    // 响应容器生命周期时间的动作
+    Lifecycle *Lifecycle `json:"lifecycle,omitempty" protobuf:"bytes,12,opt,name=lifecycle"`
+
+    // 容器终止执行的消息存储文件路径，默认为 /dev/termination-log
+    TerminationMessagePath string `json:"terminationMessagePath,omitempty" protobuf:"bytes,13,opt,name=terminationMessagePath"`
+
+    // 定义从容器中获取容器终止执行的消息策略。如果定义为 File，那么会使用 terminationMessagePath 的内容来填充容器的状态信息；
+    // 如果指定为 FallbackToLogsOnError 则会在容器终止执行消息为空并且容器因执行失败而退出的情况下，使用容器的最后一块日志来填充
+    // 容器的状态信息
+    TerminationMessagePolicy TerminationMessagePolicy `json:"terminationMessagePolicy,omitempty" protobuf:"bytes,20,opt,name=terminationMessagePolicy,casttype=TerminationMessagePolicy"`
+
+    // 镜像的拉取策略，可选值为 Always、Never 和 IfNotPresent。
+    ImagePullPolicy PullPolicy `json:"imagePullPolicy,omitempty" protobuf:"bytes,14,opt,name=imagePullPolicy,casttype=PullPolicy"`
+
+    // 容器执行时所采用的安全策略选项
+    SecurityContext *SecurityContext `json:"securityContext,omitempty" protobuf:"bytes,15,opt,name=securityContext"`
+
+    // 是否开启交互式的模式。在开启交互式的模式下，容器在启动的时候会给 Stdin 分配一块缓冲区。如果该参数设置为 false，
+    // 那么在容器中从 Stdin 读取数据是读取不到的。
+    Stdin bool `json:"stdin,omitempty" protobuf:"varint,16,opt,name=stdin"`
+
+    // 当上面的参数 Stdin 设置为 true 的情况下，Stdin 输入流将在所有打开的会话中有效。如果设置 StdinOnce 为 true，
+    // 那么 Stdin 会在容器启动的时候打开，在第一个连接进来的会话后清空，直到容器重新启动后才会被再次打开。
+    // 当这个参数设置为 false 的情况下，容器进行从 Stdin 读取时永远不会返回 EOF 错误。
+    StdinOnce bool `json:"stdinOnce,omitempty" protobuf:"varint,17,opt,name=stdinOnce"`
+
+    // 容器是否需要为自己分配一个 TTY。如果需要设置为 true，那么要求上面的 Stdin 也设置为 true
+    TTY bool `json:"tty,omitempty" protobuf:"varint,18,opt,name=tty"`
+}
+~~~
+
+#### 5.service源码
+
+ 在上一节实验中，通过对 Pod 结构体的学习，我们了解了 Kubernetes 中的资源的基本结构包括 metadata、spec 和 status。所以 Service 的基本结构也是如此： 
+
+~~~go
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+type Service struct {
+    metav1.TypeMeta `json:",inline"`
+    metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+    Spec ServiceSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+    Status ServiceStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+}
+~~~
+
+ 在上面的结构中，metadata 部分我们已经熟悉了。Status 部分是只读的内容，我们先看看 Service 的 Spec 的定义。 
+
+```go
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+// ServiceSpec 描述了 Service 资源的属性
+type ServiceSpec struct {
+    // Service 暴露的所有端口
+    Ports []ServicePort `json:"ports,omitempty" patchStrategy:"merge" patchMergeKey:"port" protobuf:"bytes,1,rep,name=ports"`
+
+    // 将 Service 的流量路由给拥有标签匹配 Selector 中定义的标签的 Pod。如果不指定或者为空，那么就假设这个
+    // 服务有外部的进程来管理 Service 对应的 Endpoints，Kubernetes 在这种情况下不会去修改这个 Endpoints。
+    // Selector 仅在 ServiceType 为 ClusterIP、NodePort 和 LoadBalancer 时生效。如果 ServiceType
+    // 为 ExternalName，那么 Selector 值会被忽略。
+    Selector map[string]string `json:"selector,omitempty" protobuf:"bytes,2,rep,name=selector"`
+
+    // ClusterIP 是集群分配给 Service 的一个随机的 IP 地址。如果这个 IP 地址是手动指定的，那么要看这个 IP 是否已经
+    // 被其它服务所占用。如果没有占用，那么就会分配这个 Service，否则 Service 的创建会失败。
+    // 这个值不可以通过 Update 请求来更新。可选值为 None、空字符串和合法的 IP 地址。
+    // 可以为无头 Service 指定 None，这个时候不需要转发流量。
+    // ClusterIP 仅在 ServiceType 为 ClusterIP、NodePort 和 LoadBalancer 时生效。如果 ServiceType
+    // 为 ExternalName，那么 ClusterIP 值会被忽略。
+    ClusterIP string `json:"clusterIP,omitempty" protobuf:"bytes,3,opt,name=clusterIP"`
+
+    // Type 参数定义如何暴露这个 Service。 默认设置为 ClusterIP。可选值为 ExternalName、ClusterIP、NodePort 和
+    // LoadBalancer。其中 ExternalName 表示使用指定的 externalName。
+    // ClusterIP 表示为 Service 分配一个集群内部的 IP 并且将流量负载到 Service 对应的 Endpoints 去。如果 ClusterIP 设置为 None，
+    // 将不会给 Service 分配一个虚拟 IP，Endpoints 就将作为一组端点暴露出来，而不是一个稳定的 IP。
+    // NodePort 表示除了给 Service 分配一个集群内的 IP 之外，还会在每个 Node 上面为这个 Service 暴露一个映射端口。通过这个暴露出来的
+    // 端口，Node 上的集群外的服务可以访问集群内的 Service。
+    // LoadBalancer 基于 NodePort 之上，通过创建一个外部的负载均衡器，然后通过 NodePort 的端口路由到集群内部的 Service。
+    Type ServiceType `json:"type,omitempty" protobuf:"bytes,4,opt,name=type,casttype=ServiceType"`
+
+    // 指定一组外部允许访问集群内服务的 IP。这些 IP 本身不属于 Kubernetes 系统。
+    // 用户需要自己确保这些 IP 是允许访问集群内服务的。一个常见的例子是外部的负载均衡器。
+    ExternalIPs []string `json:"externalIPs,omitempty" protobuf:"bytes,5,rep,name=externalIPs"`
+
+    // 用来设置 Session 的亲和性。可选值为 ClientIP 和 None。默认为 None。
+    SessionAffinity ServiceAffinity `json:"sessionAffinity,omitempty" protobuf:"bytes,7,opt,name=sessionAffinity,casttype=ServiceAffinity"`
+
+    // 只适用于 Service Type 为 LoadBalancer 的情况。用来指定负载均衡器的 IP 地址。
+    LoadBalancerIP string `json:"loadBalancerIP,omitempty" protobuf:"bytes,8,opt,name=loadBalancerIP"`
+
+    // 如果指定的参数被平台所支持，将控制只允许指定的 Client IP 的流量经过云厂商负载均衡器。
+    LoadBalancerSourceRanges []string `json:"loadBalancerSourceRanges,omitempty" protobuf:"bytes,9,opt,name=loadBalancerSourceRanges"`
+
+    // 该参数指定 kubedns 或者其他 DNS 返回的一个该 Service 的 CNAME 记录。这个中间不存在任何代理。
+    ExternalName string `json:"externalName,omitempty" protobuf:"bytes,10,opt,name=externalName"`
+
+    // 该参数表示 Service 期望如何路由外部的流量到 Node 或者是 Cluster 层面的 Endpoints。
+    // 如果指定为 Local，那么会保留客户端的 IP 地址，对 LoadBalancer 和 NodePort 类型的服务来说，会避免第二跳，
+    // 潜在的风险是导致流量负载的不均衡。
+    // 如果指定为 Cluster，那么客户端的 IP 地址将被忽略，有可能导致流量负载的第二跳，但是可以保证整体流量的负载均衡。
+    ExternalTrafficPolicy ServiceExternalTrafficPolicyType `json:"externalTrafficPolicy,omitempty" protobuf:"bytes,11,opt,name=externalTrafficPolicy"`
+
+    // 该参数指定 Service 健康检查的端口。如果没有指定的话，将自动创建一个关联到分配的 NodePort 的检查端口。
+    // 只在 Service Type 为 LoadBalancer 和 ExternalTrafficPolicy 设置为 Local 的时候生效。
+    HealthCheckNodePort int32 `json:"healthCheckNodePort,omitempty" protobuf:"bytes,12,opt,name=healthCheckNodePort"`
+
+    // 当设置为 true 时，表示 Endpoints 中的 notReadyAddresses 对应的端点也需要发布出来。默认为 false。
+    PublishNotReadyAddresses bool `json:"publishNotReadyAddresses,omitempty" protobuf:"varint,13,opt,name=publishNotReadyAddresses"`
+
+    // 包含 Session 亲和性相关配置
+    SessionAffinityConfig *SessionAffinityConfig `json:"sessionAffinityConfig,omitempty" protobuf:"bytes,14,opt,name=sessionAffinityConfig"`
+}
+```
+
+ 我们在之前的 YAML 配置文件中，重点关注了 Ports 和 ServiceType 。其中前者定义了 Service 对外暴露的端口，以及对内映射到 Pod 的端口 
+
+ 其中 ServicePort 的定义如下 
+
+```go
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+// ServicePort 定义了 Service 暴露的端口。
+type ServicePort struct {
+    // Service 内部的端口名称，ServiceSpec 内部的端口名称必须唯一。
+    // 这个名称和 EndpointPort 对象名称一致。
+    // 如果这个 Service 只暴露了一个端口，那么这个值是可选的。
+    Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+
+    // 该端口的 IP 协议。支持 TCP、UDP 和 SCTP。默认为 TCP 。
+    Protocol Protocol `json:"protocol,omitempty" protobuf:"bytes,2,opt,name=protocol,casttype=Protocol"`
+
+    // Service 暴露的端口
+    Port int32 `json:"port" protobuf:"varint,3,opt,name=port"`
+
+    // Service 所指向的 Pod 的端口，这个端口可以是一个整型的端口号，也可以是端口的名称。
+    // 端口的范围为 1 ～ 65535。 如果这个值是一个字符串，那么这个值会被当作目标 Port 的容器端口名称。
+    // 如果没有指定，则使用和上面的 Port 一样的值。
+    // 当 ClusterIP = None 的时候，这个值会被忽略。
+    TargetPort intstr.IntOrString `json:"targetPort,omitempty" protobuf:"bytes,4,opt,name=targetPort"`
+
+    // 当 ServiceType 为 NodePort 或者 LoadBalancer 的时候，这个端口表示 Service 暴露在 Node 上面的端口。
+    // 这个值通常是由系统分配的。如果是手动指定的话，当这个端口可用时会被分配给 Service，如果不可用那么 Service
+    // 创建会失败。
+    // 默认情况下，如果 Service 的 ServiceType 需要这样的一个端口的话，系统会自动分配一个。
+    NodePort int32 `json:"nodePort,omitempty" protobuf:"varint,5,opt,name=nodePort"`
+}
+```
+
+这个结构体的值和我们之前学习过的 YAML 配置中的值可以对应起来了。
+
+好了，现在总结一下 Service 资源的作用：
+
+1. Service 为一组 Pod 提供了集群内的访问接口，其它集群内的服务可以通过这个 Service 来访问到后端 Pod 中的服务。
+2. Service 中支持定义一个或者多个端口映射，当有多个端口映射的时候，每个映射必须有一个唯一的名称。
+3. Service 暴露的端口一般和后端 Pod 中容器暴露的端口保持一致，这样方便系统的维护。
+4. Service 暴露的端口在向后端 Pod 中端口映射的时候，支持指定后端端口的端口号或者是端口名称。
+5. Service 可以在 ServiceType 为 NodePort 的时候，在 Node 节点上也暴露一个端口，可以通过这个端口提供对集群外的访问。
+6. Service 本身在集群内部通常是有一个 ClusterIP 的，这个 IP 由系统自动分配，供系统内其它服务访问。
+7. Service 向后端 Pod 的请求路由是通过匹配 Service 中的 Selector 和 Pod 中定义的标签来完成的。
+
+我们已经知道了 Service 可以向 Pod 进行路由请求，也知道了 Pod 的任何 Pod IP 变动、所在宿主 Node  的变动等信息都是通过和 Service 同名的 Endpoints 对象来动态维护的。比如后端 Pod 增加了一个实例，那么  Kubernetes 就会更新 Endpoints 对象，把这个 Pod 的实例信息加到 Endpoints 中，这样 Service  路由请求的时候就能动态发现这个 Pod 实例了。当然，Pod 的销毁或者是迁移遵循的流程是一样的。Kubernetes 就是通过这种方式来维护  Service 和 Pods 之间的关系的。
+
+虽然这个 Endpoints 不需要我们手动维护，但是为了加深印象，还是看下 Endpoints 在 Go SDK 中的定义：
+
+```go
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+type Endpoints struct {
+    metav1.TypeMeta `json:",inline"`
+    metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+    // Subsets 表示所有端点的集合。Subset 中的地址是根据 Pod IP 来聚合的。一个地址对应多个端口。
+    // 其中的端口有些是可用的，有些不是(因为来自其它的容器)。这样 EndpointSubset 里面对不同的端口就会有
+    // Addresses 和 NotReadyAddresses。一个端点 Address 要么出现在 Addresses 里面，要么出现在
+    // NotReadyAddresses 里面。
+    // 这些 Addresses 和 Ports 一同维护着 Service 的路由状态。
+    Subsets []EndpointSubset `json:"subsets,omitempty" protobuf:"bytes,2,rep,name=subsets"`
+}
+```
+
+ 我们再看下 EndpointSubset 的定义 
+
+```go
+继续深入 EndpointAddress 和 EndpointPoint 的定义// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+type EndpointSubset struct {
+    // 端点可用的地址，即 Pod IP 和对应端口可用。
+    Addresses []EndpointAddress `json:"addresses,omitempty" protobuf:"bytes,1,rep,name=addresses"`
+
+    // 目前因为各种原因暂不可用的端点，比如 Pod 还没有完成启动，或者最近一次 Readiness 探针检查失败，或者最近一次 Liveness 检查失败
+    NotReadyAddresses []EndpointAddress `json:"notReadyAddresses,omitempty" protobuf:"bytes,2,rep,name=notReadyAddresses"`
+
+    // 在相关 Pod IP 上面可用的端口
+    Ports []EndpointPort `json:"ports,omitempty" protobuf:"bytes,3,rep,name=ports"`
+}
+```
+
+ 继续深入 EndpointAddress 和 EndpointPoint 的定义 
+
+```go
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+type EndpointAddress struct {
+    // 端点的 Pod IP
+    IP string `json:"ip" protobuf:"bytes,1,opt,name=ip"`
+    // 端点的 Hostname
+    Hostname string `json:"hostname,omitempty" protobuf:"bytes,3,opt,name=hostname"`
+    // 端点所在的 Node 的名称
+    NodeName *string `json:"nodeName,omitempty" protobuf:"bytes,4,opt,name=nodeName"`
+    // 指向提供该端点的 Pod 对象
+    TargetRef *ObjectReference `json:"targetRef,omitempty" protobuf:"bytes,2,opt,name=targetRef"`
+}
+```
+
+```go
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+type EndpointPort struct {
+    // 端点(服务)端口的名称
+    Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+    // 端点(服务)端口号
+    Port int32 `json:"port" protobuf:"varint,2,opt,name=port"`
+    // 端点(服务)端口协议
+    Protocol Protocol `json:"protocol,omitempty" protobuf:"bytes,3,opt,name=protocol,casttype=Protocol"`
+}
+```
+
+ 我们从这里看出 Endpoints 维护了 Pod IP 和 Pod 暴露的端口信息。另外还暴露了 Pod 所在 Node 信息，这样就为 Service 的请求路由提供了支持。 
+
+#### 6.ingress源码
+
+ Kubernetes 提供了一个名称叫做 Ingress 的资源来将集群外部的 HTTP 协议的流量路由给集群内部的  Service，从而将内部服务暴露给集群外部访问。Ingress 的中文意思本身就是入口。可以认为 Ingress 是 Kubernetes  七层(应用层)协议的入口。 
+
+ 从上图可以看出，Ingress 将请求路由给后端的 Service，然后由 Service 再转发给 Pod。之前我们已经了解到 Service 是通过 Selector 来选择需要转发的 Pod 的，而这里 Ingress 是通过指定 Service 的名称来进行路由的。另外  Ingress 还提供了负载均衡、HTTPS 证书支持和基于域名的虚拟主机功能。 
+
+ 我们先看下 Ingress 的组成部分 
+
+```go
+// $GOPATH/src/k8s.io/api/extensions/v1beta1/types.go
+
+type Ingress struct {
+    metav1.TypeMeta `json:",inline"`
+    metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+    // Spec 是 Ingress 期望的状态
+    Spec IngressSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+
+    // Status 是 Ingress 当前的状态
+    Status IngressStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+}
+```
+
+ 其中最主要研究下 Ingress 的期望状态 Spec 的定义： 
+
+```go
+// $GOPATH/src/k8s.io/api/extensions/v1beta1/types.go
+
+type IngressSpec struct {
+    // 定义一个默认的后端用来响应不匹配任何规则的请求。至少指定 backend 或者 rules。
+    Backend *IngressBackend `json:"backend,omitempty" protobuf:"bytes,1,opt,name=backend"`
+
+    // 定义 HTTPS 的证书。目前 Ingres 只支持一个 HTTPS 的端口，即 443。
+    // 如果这个列表的成员指定了不同的 Host，那么将根据通过 SNI TLS 指定的域名把请求复用到相同的端口。
+    // 上面的功能需要 Ingress Controller 支持 SNI。
+    TLS []IngressTLS `json:"tls,omitempty" protobuf:"bytes,2,rep,name=tls"`
+
+    // Ingress 中定义的一组基于 Host 的规则。如果没有指定任何规则，所有的流量都会发送给默认的后端。
+    Rules []IngressRule `json:"rules,omitempty" protobuf:"bytes,3,rep,name=rules"`
+}
+```
 
