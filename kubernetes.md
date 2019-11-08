@@ -2252,3 +2252,284 @@ type IngressSpec struct {
 }
 ```
 
+ 其中 IngressBackend 定义了一个后端的 Service 和 Service 暴露的端口。这个类型定义如下： 
+
+```GO
+// $GOPATH/src/k8s.io/api/extensions/v1beta1/types.go
+
+type IngressBackend struct {
+    // 定义了引用的 Service 的名称
+    ServiceName string
+
+    // 定义了引用的 Service 暴露的端口
+    ServicePort intstr.IntOrString
+}
+```
+
+ 而 IngressTLS 则是定义了允许的 Host 列表和对应的保存 HTTPS 证书的 Secret 名称。这个类型定义如下： 
+
+```go
+// $GOPATH/src/k8s.io/api/extensions/v1beta1/types.go
+
+type IngressTLS struct {
+    // Hosts 指定了 HTTPS 证书中包含的 Host 列表。
+    Hosts []string
+    // SecretName 是保存 HTTPS 证书内容的 Secret 名称。
+    // 我们需要把 HTTPS 的证书事先保存到 Secret 中，才能使用 HTTPS。
+    SecretName string
+}
+```
+
+ 最后，最重要的是在常规情况下，请求转发到后端 Service 的定义。主要是转发规则和对应的 Service。这个类型定义如下： 
+
+```go
+// $GOPATH/src/k8s.io/api/extensions/v1beta1/types.go
+
+type IngressRule struct {
+    // Host 定义转发的请求对应的 Host，简单来讲就是从哪个域名请求服务的。
+    Host string
+    // IngressRuleValue 定义了上面的 Host 的路由规则，可以根据不同的请求路径
+    // 请求路由到不同的后端 Service。
+    IngressRuleValue
+}
+```
+
+ 我们看下基于 Path 的路由定义： 
+
+```go
+// $GOPATH/src/k8s.io/api/extensions/v1beta1/types.go
+
+type IngressRuleValue struct {
+    HTTP *HTTPIngressRuleValue
+}
+
+type HTTPIngressRuleValue struct {
+    Paths []HTTPIngressPath
+}
+
+type HTTPIngressPath struct {
+    // Path 定义了请求的路径
+    Path string
+    // Backend 定义了路由到的后端 Service
+    Backend IngressBackend
+}
+```
+
+ 我们看下基于 Path 的路由定义： 
+
+```go
+// $GOPATH/src/k8s.io/api/extensions/v1beta1/types.go
+
+type IngressRuleValue struct {
+    HTTP *HTTPIngressRuleValue
+}
+
+type HTTPIngressRuleValue struct {
+    Paths []HTTPIngressPath
+}
+
+type HTTPIngressPath struct {
+    // Path 定义了请求的路径
+    Path string
+    // Backend 定义了路由到的后端 Service
+    Backend IngressBackend
+}
+```
+
+我们通过一层层查看资源的定义方式，最终看到了 Ingress 是在 HTTPIngresPath 中基于请求的 Path 转发到不同的 Backend 对应的 Service。
+
+所以简单来讲，Ingress 的主要功能就是基于不同的 Host、不同的 Path，将请求路由到不同的后端 Service。
+
+现在来讲解一下，外部的流量是如何通过这个 Service 根据我们指定的 Ingress 的规则路由到对应集群内部的 Service 中去。
+
+首先，上面的 Ingress Nginx 的 Service 将流量转发给其根据 Selector 匹配的 Pod，这些 Pod 也就是 Ingress Nginx Controller 对应的 Pod：
+
+ 这些 Ingress Nginx Controller 的 Pod 会监听 Kubernetes API Server 的接口  /ingress，从这个接口获取集群中 Ingress 定义的内容和更新，然后根据这些 Ingress 规则来将流量转发到这些 Ingress  规则中匹配到的 Service 中。从而形成了一整条流量转发链： 
+
+![](image\ingressOfpic.png)
+
+#### 7.secret源码
+
+secret struct
+
+```go
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+type Secret struct {
+    metav1.TypeMeta `json:",inline"`
+    metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+    // Data 字段包含 Secret 的数据，每个 Key 必须由数字，字符字符, -, _ 或者 . 组成。
+    // 对应的值为 Secret 数据 base64 编码后的值，可以用来表示任意类型的数据(也可以是非字符串的二进制数据)。
+    Data map[string][]byte `json:"data,omitempty" protobuf:"bytes,2,rep,name=data"`
+
+    // StringData 用来存储字符串类型的数据。这个字段只用来方便写入。写入的数据会合并到上面的 Data 字段中。
+    StringData map[string]string `json:"stringData,omitempty" protobuf:"bytes,4,rep,name=stringData"`
+
+    // 预定义一些方便程序处理的 Secret 数据类型，比如 TLS、SSH Key、ServiceAccount 等。
+    Type SecretType `json:"type,omitempty" protobuf:"bytes,3,opt,name=type,casttype=SecretType"`
+}
+```
+
+从上面 Secret 的结构定义就可以看出 Secret 用来存储键值对数据，而且可以是任意类型的数据，无论是二进制还是字符串类型的数据都可以存储。如果是二进制的数据，则使用 base64 编码之后再存入 Data 中。
+
+另外对于常见的一些类型的 Secret 数据，还额外定义了一些常用的 Secret 类型字符串，以及它们对应的需要填充的 Key 名称来方便程序处理。我们可以看看预定义了哪些类型的 Secret：
+
+```go
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+type SecretType string
+
+const (
+    // SecretTypeOpaque 默认的类型，表示任意数据
+    SecretTypeOpaque SecretType = "Opaque"
+
+    // SecretTypeServiceAccountToken 包含一个可以用来代表 ServiceAccount 的 Token，可以使用该 Token 来调用 API
+    // 必填字段:
+    // - Secret.Annotations["kubernetes.io/service-account.name"] - ServiceAccount 的名字
+    // - Secret.Annotations["kubernetes.io/service-account.uid"] - SerivceAccout 的 UID
+    // - Secret.Data["token"] - 用来代表 ServiceAccount 的 Token，可以使用该 Token 来调用 API
+    SecretTypeServiceAccountToken SecretType = "kubernetes.io/service-account-token"
+
+    // SecretTypeDockercfg 包含了一个 dockercfg 文件的内容，格式和 ~/.dockercfg 一样。
+    // 必填字段:
+    // - Secret.Data[".dockercfg"] - 一个序列化的 ~/.dockercfg 文件
+    SecretTypeDockercfg SecretType = "kubernetes.io/dockercfg"
+
+
+    // SecretTypeDockerConfigJson 包含了 dockercfg 文件的内容，格式和 ~/.docker/config.json 一样。
+    // 必填字段:
+    // - Secret.Data[".dockerconfigjson"] - a serialized ~/.docker/config.json file
+    SecretTypeDockerConfigJson SecretType = "kubernetes.io/dockerconfigjson"
+
+
+    // SecretTypeBasicAuth 包含了 Basic 鉴权所需要的用户名和密码。
+    // 必填字段:
+    // - Secret.Data["username"] - 用于鉴权的用户名
+    // - Secret.Data["password"] - 用于鉴权的密码或令牌
+    SecretTypeBasicAuth SecretType = "kubernetes.io/basic-auth"
+
+    // SecretTypeSSHAuth 包含了 SSH 验证所需要的数据。
+    // 必填字段:
+    // - Secret.Data["ssh-privatekey"] - SSH 私钥
+    SecretTypeSSHAuth SecretType = "kubernetes.io/ssh-auth"
+
+    // SecretTypeTLS 包含了 HTTPS 的证书和私钥
+    // 必填字段:
+    // - Secret.Data["tls.key"] - 私钥内容
+    //   Secret.Data["tls.crt"] - 证书内容
+    SecretTypeTLS SecretType = "kubernetes.io/tls"
+
+    // SecretTypeBootstrapToken 包含用于自启动所需的 Token。
+    SecretTypeBootstrapToken SecretType = "bootstrap.kubernetes.io/token"
+)
+```
+
+ 上面这些以 SecretType 开头的常量就是预定义的常用的 Secret 数据类型。另外对于这些类型的 Secret  需要设置哪些键的值，也是预先定义为常量了，避免编程的时候手误写错。例如 SecretTypeServiceAccountToken 类型的  Secret 就定义好了如下的需要填充的键： 
+
+```GO
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+ServiceAccountNameKey = "kubernetes.io/service-account.name"
+ServiceAccountUIDKey = "kubernetes.io/service-account.uid"
+ServiceAccountTokenKey = "token"
+ServiceAccountKubeconfigKey = "kubernetes.kubeconfig"
+ServiceAccountRootCAKey = "ca.crt"
+ServiceAccountNamespaceKey = "namespace"
+```
+
+ 上面的这些字符串常量就是 SecretTypeServiceAccountToken 这个类型的 Secret 需要填充的键。 
+
+ 我们从上面了解到可以使用 Secret 来存储 HTTPS 的证书和私钥。其实就是填充 Secret 结构中的 Data 或者 StringData，需要填充的两个键如下： 
+
+```GO
+// $GOPATH/src/k8s.io/api/core/v1/types.go
+
+TLSCertKey = "tls.crt"
+TLSPrivateKeyKey = "tls.key"
+```
+
+ 而这个 Secret 对应的预定义类型为 SecretTypeTLS 
+
+#### 8.deployment源码
+
+Deployment 提供了一种机制，方便用户通过自动的方式来管理 Pod 的生命周期，提供一种便捷的方式来解决应用的升级、回滚和扩容操作。
+
+当我们期望对应用进行升级、回滚和扩容的时候，都会涉及到 Pod 的销毁和重建。在 Deployment 中可以描述我们期望 Pod  升级到的版本、回滚到的版本或者是期望扩容到的 Pod 的数量。然后 Kubernetes 中的 Replication Controller  会执行我们的预期，让生产环境中的 Pod 状态和预期的状态一致。
+
+```go
+// $GOPATH/src/k8s.io/api/apps/v1beta1/types.go
+
+type Deployment struct {
+    metav1.TypeMeta `json:",inline"`
+    metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+    // Deployment 的期望状态
+    Spec DeploymentSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+
+    // Deployment 的最新状态
+    Status DeploymentStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+}
+```
+
+```go
+// $GOPATH/src/k8s.io/api/apps/v1beta1/types.go
+
+type DeploymentSpec struct {
+    // 期望的 Pod 数量。
+    Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
+
+    // 选择 Pod 的标签。必须和 Template 定义的标签匹配。
+    Selector *metav1.LabelSelector `json:"selector,omitempty" protobuf:"bytes,2,opt,name=selector"`
+
+    // Pod 的创建模板，这里面包含了 Pod 的定义。所以可以自动创建 Pod。
+    Template v1.PodTemplateSpec `json:"template" protobuf:"bytes,3,opt,name=template"`
+
+    // Deployment 的执行策略，在升级多副本的服务时很有用。
+    Strategy DeploymentStrategy `json:"strategy,omitempty" patchStrategy:"retainKeys" protobuf:"bytes,4,opt,name=strategy"`
+
+    // 最短可用时间，即 Pod 创建完成之后多久即认为 Pod 可用。默认为 0，表示创建后即可用。
+    MinReadySeconds int32 `json:"minReadySeconds,omitempty" protobuf:"varint,5,opt,name=minReadySeconds"`
+
+    // 保留的旧的 ReplicaSets 的数量用于回滚
+    RevisionHistoryLimit *int32 `json:"revisionHistoryLimit,omitempty" protobuf:"varint,6,opt,name=revisionHistoryLimit"`
+
+    // 标记 Deployment 是否被暂停，暂停之后 Deployment Controller 不会再处理这个 Deployment。
+    Paused bool `json:"paused,omitempty" protobuf:"varint,7,opt,name=paused"`
+
+    // Deployment 被标记为失败之前的最大允许执行时间。Deployment Controller 会继续处理失败的 Deployment
+    // 并且会把失败的原因写到 Deployment 的 Status 中。这个默认设置为 int32 类型的最大值（即 2147483647），
+    // 表示没有截止时间。
+    ProgressDeadlineSeconds *int32 `json:"progressDeadlineSeconds,omitempty" protobuf:"varint,9,opt,name=progressDeadlineSeconds"`
+}
+```
+
+从上面的 Deployment 的 Spec 的定义中，我们可以看到 Deployment 可以把之前通过手动管理 Pod  的操作管理起来，然后通过 Replication Controller  来自动执行这些过程。由于整个过程中，不再需要人为介入，所以可以避免很多的工作量，同时减少人为操作的失误。
+
+在 Deployment 的 Spec 定义中，有个配置项叫做 Strategy，这是一个在多副本（Pod）应用场景下很有用的升级或者回滚的配置项，我们可以从它的可选设置里面了解它的具体功能：
+
+```go
+// $GOPATH/src/k8s.io/api/apps/v1beta1/types.go
+
+// 部署策略
+type DeploymentStrategyType string
+
+const (
+    // 创建新的 Pod 之前，销毁所有旧的 Pod。
+    RecreateDeploymentStrategyType DeploymentStrategyType = "Recreate"
+
+    // 通过滚动升级方式逐步创建新的 Pod，同时销毁旧的 Pod。
+    RollingUpdateDeploymentStrategyType DeploymentStrategyType = "RollingUpdate"
+)
+
+type DeploymentStrategy struct {
+    // 部署的类型，可以是 Recreate 或者是 RollingUpdate。默认是 RollingUpdate
+    Type DeploymentStrategyType
+
+    // 滚动升级的配置参数，当上面的 Type 是 RollingUpdate 的时候生效
+    RollingUpdate *RollingUpdateDeployment
+}
+```
+
+ 通过上面的配置，我们发现 Deployment 可以支持滚动升级的方式，这样可以在不中断服务的情况下，完成升级或者回滚过程。 
+
