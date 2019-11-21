@@ -186,3 +186,19 @@ root     28492  0.0  0.0 112708   980 pts/0    R+   09:17   0:00 grep --color=au
 
 ~~~
 
+### 12.内网安装Mariadb
+
+~~~shell
+$ yum install mariadb-server mariadb
+$ systemctl start mariadb
+$ systemctl enable mariadb
+#修改密码
+$ mysql
+$ use mysql;
+$ update user set password=password("Gree!2018") where user ='root';
+$ flush privileges;
+#设置白名单
+$ grant all privileges on *.* to 'username'@'host' identified by 'Gree!2018' with grant option;
+$ flush privileges;
+~~~
+
