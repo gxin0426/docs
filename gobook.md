@@ -155,7 +155,7 @@ items := make([]map[int]int, 5)
 
 ## 5.package
 
-- 正则表达式 regexp
+####1.正则表达式 regexp
 
 ```go
 //define regexp regular
@@ -169,7 +169,7 @@ return strconv.FormatFloat(v * 2, 'f', 2, 32)
 str2 := re.ReplaceAllStringFunc(astring,f)
 ```
 
-- sync 锁
+####2.sync 锁
 
 ~~~go
 type Info struct {
@@ -185,6 +185,10 @@ func Update(info *Info) {
 }
 
 ~~~
+
+#### 3.iota
+
+
 
 ## 6.struct and method
 

@@ -1,3 +1,11 @@
+### 0.配置阿里yum源
+
+~~~shell
+#配置阿里yum源命令
+curl -o /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
+curl -o /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
+~~~
+
 ### 1.rpm
 
 ```shell
@@ -200,5 +208,132 @@ $ flush privileges;
 #设置白名单
 $ grant all privileges on *.* to 'username'@'host' identified by 'Gree!2018' with grant option;
 $ flush privileges;
+~~~
+
+### 13.安装mysql
+
+~~~shell
+$ wget http://dev.mysql.com/get/mysql57-community-release-el7-8.noarch.rpm
+$ yum localinstall mysql57-community-release-el7-8.noarch.rpm
+$ yum repolist enabled | grep "mysql.*-community.*"
+$ yum install mysql-community-server
+# 找到初始密码
+$ vi /var/log/mysqld.log
+#设置密码
+$ set password for 'root'@'localhost'=password('password!'); 
+# 允许远程连接 
+$ grant all on *.* to root@'%' identified by 'password' with grant option;  
+# 如果需要设置简单密码 
+$ set global validate_password_policy=0; 
+$ set global validate_password_length=1; 
+$ set global validate_password_mixed_case_count=2; 
+#增加白名单
+mysql> use mysql 
+mysql> GRANT ALL ON *.* to root@'192.168.1.4' IDENTIFIED BY 'your-root-password';  
+mysql> FLUSH PRIVILEGES; 
+
+#完全卸载mysql
+$ yum remove mysql
+$ find / -name mysql
+rm -rf /usr/lib64/mysql
+rm -rf /usr/share/mysql
+rm -rf /usr/bin/mysql
+rm -rf /etc/logrotate.d/mysql
+rm -rf /var/lib/mysql
+rm -rf /var/lib/mysql/mysql
+rm –rf /usr/my.cnf
+rm -rf /root/.mysql_sercret  
+rm -rf /var/logs/mysql
+~~~
+
+### 14.df du free
+
+~~~shell
+du -h: 显示每个文件和目录的磁盘使用空间~~~文件的大小
+df -h：显示磁盘分区上可以使用的磁盘空间 #-a    #查看全部文件系统，单位默认KB   -h  使用-h选项以KB、MB、GB的单位来显示，可读性高~~~（最常用）
+free -h：可以显示Linux系统中空闲的、已用的物理内存及swap内存,及被内核使用的buffer
+
+~~~
+
+###15.ipvs iptables
+
+1. 三种工作模式
+
+- nat
+- tun
+- dr
+
+### 16.添加环境变量
+
+~~~shell
+$ vi /etc/profile
+unset i
+unset -f pathmunge
+#添加环境变量
+PATH=$PATH:/usr/local/go/bin
+export PATH
+$ source /etc/profile
+~~~
+
+###17.centos7 安装 OpenSSL
+
+~~~shell
+$ wget http://www.openssl.org/source/openssl-1.0.2f.tar.gz
+$ tar -zxvf tar -xzf openssl-1.0.2f.tar.gz
+$ cd openssl-1.0.2f
+$ mkdir /usr/local/openssl
+$ ./config --prefix=/usr/local/openssl
+$ make
+$ make install
+$ ln -s /usr/local/openssl/bin/openssl /usr/bin/openssl
+$ cd /usr/local/openssl
+$ ldd /usr/local/openssl/bin/openssl
+$ vim /etc/ld.so.conf
+#在最后追加一行
+/usr/local/openssl/lib 
+$ ldconfig /etc/ld.so.conf
+$ openssl version
+~~~
+
+###18.删除网桥
+
+~~~shell
+$ yum install bridge-utils
+#添加网桥
+$ brctl addbr br0
+#设置br0
+$ ifconfig br0 192.168.1.100.1 netmask 255.255.255.0
+#查看网桥
+$ brctl show
+#删除网桥
+$ brctl delbr br0
+# 将eth0端口加入网桥br0
+$ brctl addif br0 eth0
+# 从网桥br0中删除eth0端口
+$ brctl delif br0 eth0
+~~~
+
+### 19.安装jdk和maven
+
+~~~shell
+$ mkdir /usr/local/java/
+$ tar -zxvf jdk-8u171-linux-x64.tar.gz -C /usr/local/java/
+$ vim /etc/profile
+
+export JAVA_HOME=/usr/local/java/jdk1.8.0_171
+export JRE_HOME=${JAVA_HOME}/jre
+export CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib
+export PATH=${JAVA_HOME}/bin:$PATH
+
+$ source /etc/profile
+#建立一个软连接
+$ ln -s /usr/local/java/jdk1.8.0_171/bin/java /usr/bin/java
+#安装maven
+$ tar -zxf apache-maven-3.3.9-bin.tar.gz
+$ mv apache-maven-3.3.9 /usr/local/maven
+$ vi /etc/profile
+M2_HOME=/usr/local/maven
+export PATH=${M2_HOME}/bin:${PATH}
+$ source /etc/profile
 ~~~
 

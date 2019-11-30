@@ -199,3 +199,71 @@ $ docker save -o calico_node_v3.8.2.tar calico/node:v3.8.2
 $ docker load --input calico_node_v3.8.2.tar
 ~~~
 
+### 7.docker-compose network网段设置
+
+~~~yaml
+# docker version:  18.06.0+
+# docker-compose version: 1.23.2+
+# OpenSSL version: OpenSSL 1.1.0h
+version: "3.7"
+services:
+  web:
+    image: alenx/walle-web:2.1
+    container_name: walle-nginx
+    hostname: nginx-web
+    ports:
+      # 如果宿主机80端口被占用，可自行修改为其他port(>=1024)
+      # 0.0.0.0:要绑定的宿主机端口:docker容器内端口80
+      - "80:80"
+    depends_on:
+      - python
+    networks:
+      - walle-net
+    restart: always
+
+  python:
+    image: alenx/walle-python:2.1
+    container_name: walle-python
+    hostname: walle-python
+    env_file:
+      # walle.env需和docker-compose在同级目录
+      - ./walle.env
+    command: bash -c "cd /opt/walle_home/ && /bin/bash admin.sh migration &&  python waller.py"
+    expose:
+      - "5000"
+    volumes:
+      - /opt/walle_home/plugins/:/opt/walle_home/plugins/
+      - /opt/walle_home/codebase/:/opt/walle_home/codebase/
+      - /opt/walle_home/logs/:/opt/walle_home/logs/
+      - /root/.ssh:/root/.ssh/
+    depends_on:
+      - db
+    networks:
+      - walle-net
+    restart: always
+
+  db:
+    image: mysql
+    container_name: walle-mysql
+    hostname: walle-mysql
+    env_file:
+      - ./walle.env
+    command: [ '--default-authentication-plugin=mysql_native_password', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+    ports:
+      - "3306:3306"
+    expose:
+      - "3306"
+    volumes:
+      - /data/walle/mysql:/var/lib/mysql
+    networks:
+      - walle-net
+    restart: always
+
+networks:
+  walle-net:
+    driver: bridge 
+    ipam: 
+      config:  
+        - subnet: 172.33.255.1/24
+~~~
+
