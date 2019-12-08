@@ -260,7 +260,7 @@ services:
     restart: always
 
 networks:
-  walle-net:
+  walle-net
     driver: bridge 
     ipam: 
       config:  

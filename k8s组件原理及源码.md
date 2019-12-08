@@ -136,7 +136,56 @@ API Server提供了k8s各类资源对象的增删改查及watch等http rest接�
 
 
 
+# 7.Calico组件原理
 
+- 名词解释
+
+~~~shell
+endpoint： 接入到calico网络中的网卡成为endpoint
+AS: 网络自治系统 通过BGP协议与其他AS网络交换路由信息
+ibgp： AS内部的BGP Speaker，与同一个AS内部的ibgp、ebgp交换路由信息
+ebgp： AS边界的BGP Speaker， 与同一个AS内部的ibgp、其他AS的ebgp交换路由信息
+workloadEndpoint： 虚拟机 容器使用的endpoint
+hostEndpoints: 物理机的地址
+BGP Speaker： 一般是网络中的物理路由器 calico将node改造成了一个软路由器（通过软路由软件bird) 
+~~~
+
+- 组织和架构
+
+~~~shell
+#分配和管理IP
+#配置容器的veth pair和容器内默认路由
+#根据集群网络情况实时更新节点的路由表
+#除etcd 容器中还运行着几个组件
+#runsv： 是一个minimal的init系统提供的命令 用来管理多个进程 可以看到他运行的进程包括：felix bird bird6 confd libnetwork
+#libnetwork plugin： calico提供的docker网络插件 主要提供的是ip管理和网络管理功能 默认情况 当网络中第一个容器出现时 calico会为容器分配一个网段 后续出现在该节点的容器都从这个子网分配IP地址
+#BIRD： 一个常用的网络路由组件 支持很多路由协议
+#confd： 因为bird的配置文件会根据用户设置的变化而变化 因此需要一种动态的机制来实时维护配置文件并通知bird最新的配置 这就是confd的工作 confd监听etcd的数据 用来更新bird的配置文件 confd的工作目录是 /etc/calico/confd 里面有三个目录 （conf.d需要读取的配置文件 config生成的配置文件最终放的目录 template模板文件） 当发现etcd更新时 就会更新bird.cfg.mesh.template 把新生成的文件放在/etc/calico/confd/config/bird.cfg 
+#felix： 负责最终网络相关的配置 1.更新节点的路由表项 2.更新节点上的iptables表项
+#etcd: 保存calico网络的元数据
+~~~
+
+- 组件的作用
+
+~~~shell
+Felix, Calico agent: 跑在每台node上 作用是负责配置路由和ACLs等信息来确保endpoint的连接状态
+etcd 负责网络元数据一致性 确保calico网络状态准确性
+BGP client（bird） 主要负责吧Felix写入kernel路由信息分发到当前calico网络 确保workload间的联通性
+BGP Route Reflector 大规模部署时使用 并且所有节点的mesh模式 通过一个或者多个bgp route reflector 来完成集中式的路由分发
+~~~
+
+- calico有基于隧道（ipip）和BGP（路由）两种方式
+
+# 8.BGP协议
+
+- 概念
+
+1. AS 自治系统
+2. IGP： RIP OSPF
+3. BGP： IBGP EBGP
+4. 小规模私有网络使用IGP 大规模私有网络使用IBGP 互联网使用EBGP
+
+·
 
 
 
