@@ -188,7 +188,20 @@ func Update(info *Info) {
 
 #### 3.iota
 
+#### 4.math包
 
+~~~go
+fmt.Println(math.Abs(float64(i))) //绝对值
+fmt.Println(math.Ceil(5.0))       //向上取整
+fmt.Println(math.Floor(5.8))      //向下取整
+fmt.Println(math.Mod(11, 3))      //取余数，同11%3
+fmt.Println(math.Modf(5.26))      //取整数，取小数
+fmt.Println(math.Pow(3, 2))       //x的y次方
+fmt.Println(math.Pow10(4))        // 10的n次方
+fmt.Println(math.Sqrt(8))         //开平方
+fmt.Println(math.Cbrt(8))         //开立方
+fmt.Println(math.Pi)              //pai
+~~~
 
 ## 6.struct and method
 
@@ -1782,7 +1795,160 @@ func main(){
 | Append  | O(n)  |    O(1)     |
 | Delete  | O(n)  |    O(n)     |
 
+## 15.二叉树
 
+![](image\go\erchashu.png)
+
+- 概念
+
+~~~shell
+#完全二叉树： 叶子节点都在最底下两层，最后一层的叶子节点都是靠左排列， 并且除了最后一层， 其它层的节点个数都要达到最大，这种二叉树叫做完全二叉树。
+#满二叉树： 叶子节点全部在最底层，除了叶子节点之外， 每个节点都有左右两个子节点，这种树叫做满二叉树
+#平衡二叉树： 平衡二叉树又被称作AVL树，他是一棵空树或者他的左右两个子树的高度差的绝对值不超过1，并且左右两个子树都是一个平衡二叉树
+~~~
+
+- 遍历
+
+![](image\go\demo01.png)
+
+~~~shell
+#前序遍历： 先访问当前节点 再前序遍历左子树 最后再遍历右子树 根——左——右 1 2 4 5 7 8 3 6
+#中序遍历： 先中序遍历左子树 然后再访问当前节点 最后再中序遍历右子树 左——根——右 4 2 7 8 5 1 3 6
+#后序遍历： 先后序遍历左子树 然后再后序遍历右子树 最后再访问当前节点 左——右——根 4 8 7 5 2 6 3 1
+#层次遍历： 从第一层开始 依次遍历每层 直到结束 1 2 3 4 5 6 7 8 
+~~~
+
+~~~代码
+package main
+import (
+    "fmt"
+)
+type Node struct{
+    Value int
+    Left *Node
+    Right *Node
+}
+func (n *Node) Print(){
+    fmt.Print(n.Value, " ")
+}
+func (n *Node)SetValue(v int){
+    if n== nil{
+        fmt.Println("setting value to nil.node")
+        return
+    }
+    n.Value = v
+}
+//前序遍历
+func (n *Node) PreOrder(){
+    if n == nil{
+        return
+    }
+    n.Print()
+    n.Left.PreOrder()
+    n.Right.PreOrder()
+}
+//中序遍历
+func (n *Node)MidOrder(){
+    if n == nil{
+        return
+    }
+    n.Left.MidOrder()
+    n.Print()
+    n.Right.MidOrder()
+}
+//后序遍历
+func (n *Node)PostOrder(){
+    if  n == nil{
+        return
+    }
+    n.Left.PostOrder()
+    n.Right.PostOrder()
+    n.Print()
+}
+//层次遍历（广度优先遍历）
+func (n *Node)BreadFirstSearch(){
+    if n == nil{
+        return
+    }
+    res := []int{}
+    nodes := []*Node{n}
+    for len(nodes) > 0{
+        curNode := nodes[0]
+        nodes = nodes[1:]
+        res = append(res, curNode.Value)
+        if curNode.Left != nil {
+            nodes = append(nodes, curNode.Left)
+        }
+        if curNode.Right != nil{
+            nodes = append(nodes,curNode.Right)
+        }
+    }
+    for _, v := range res{
+        fmt.Print(v, " ")
+    }
+}
+//层数 对任意一个子树的根节点来说 他的深度=左右子树深度的最大值+1
+func (n *Node) Layer() int{
+    if n == nil{
+        return 0
+    }
+    leftLayer := n.Left.Layer()
+    rightLayer := n.Right.Layer()
+
+    if leftLayer > rightLayer{
+        return leftLayer + 1
+    }else{
+        return rightLayer + 1
+    }
+}
+//层数 非递归实现
+func (n *Node) LayersByQueue() int{
+    if n == nil{
+        return 0
+    }
+    layers := 0
+    nodes := []*Node{n}
+    for len(nodes) > 0{
+        layers++
+        size := len(nodes)
+        count := 0
+        for count < size {
+            count++ 
+            curNode := nodes[0]
+            if curNode.Left != nil{
+                nodes = append(nodes, curNode.Left)
+            }
+            if curNode.Right != nil{
+                nodes = append(nodes, curNode.Right)
+            }
+        }
+    }
+    return layers
+}
+func CreateNode(v int) *Node{
+    return &Node{Value : v}
+}
+func main(){
+    root := Node{Value : 3}
+    root.Left = &Node{}
+    root.Left.SetValue(0)
+    root.Left.Right = CreateNode(2)
+    root.Right = &Node{5, nil, nil}
+    root.Right.Left = CreateNode(4)
+
+    fmt.Print("\n前序遍历： ")
+    root.PreOrder()
+
+    fmt.Print("\n中序遍历： ")
+    root.MidOrder()
+
+    fmt.Print("\n后序遍历： ")
+    root.PostOrder()
+
+    fmt.Print("\n层次遍历： ")
+    root.BreadFirstSearch()
+} 
+~~~
 
 
 
