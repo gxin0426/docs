@@ -182,6 +182,7 @@ lsof -i:80 #查看80占用
 lsof ab.txt #显示开启文件ab.txt的进程
 lsof -c -p 1234 #列出进程号为1234的进程所有打开的文件
 lsof +d /usr/local #显示目录下被进程开启的文件
+
 #一般使用方法
 $netstat -tunlp | grep 80
 tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      27314/nginx: master 
@@ -219,6 +220,15 @@ $ yum repolist enabled | grep "mysql.*-community.*"
 $ yum install mysql-community-server
 # 找到初始密码
 $ vi /var/log/mysqld.log
+
+#查找密码位置
+$ /temporary password
+
+#当找不到密码时，编辑这个文件
+$ vi /etc/my.cnf
+#添加一行代码，然后重启mysql 然后输入mysql直接进入
+skip-grant-tables
+
 #设置密码
 $ set password for 'root'@'localhost'=password('password!'); 
 # 允许远程连接 
@@ -229,7 +239,7 @@ $ set global validate_password_length=1;
 $ set global validate_password_mixed_case_count=2; 
 #增加白名单
 mysql> use mysql 
-mysql> GRANT ALL ON *.* to root@'192.168.1.4' IDENTIFIED BY 'your-root-password';  
+mysql> GRANT ALL ON *.* to root@'172.28.171.176' IDENTIFIED BY 'your-root-password';  
 mysql> FLUSH PRIVILEGES; 
 
 #完全卸载mysql
@@ -445,7 +455,79 @@ $ egrep 'lo*king' demo.txt
 （从高到低）
 ~~~
 
-- 子表达式
+### 21.linux 网络管理命令
+
+- linux中主要三类网络管理命令：1. ifconfig route netstat 属于传统功能单一 网络命令 2. ip ss 属于综合类网络命令 3. nmcli适用于RHEL7的综合网络命令
+
+1. ifconfig 
+
+格式： ifconfig [interface] [up | down]
+
+常用选项： -a 显示所有网络接口信息 -s 显示网络接口统计信息 
+
+ifconfig INT address 配置指定网络接口的IP 地址
+
+ifconfig INT IP/MASK 修改指定设备的ip地址 
+
+例： ifconfig eth0 192.168.1.166 255.255.255.0   
+
+2. route 
+
+格式:  route 查看路由条目        
+
+-n 对域名不进行解析 以IP地址进行显示             
+
+3. IP命令     
+
+格式： ip [options] object { command | help }     
+
+object 为 link 时 用于配置本机的二层链路属性配置    对应command为：  
+
+ip link set DEVICE {up | down | arp {on | off }}    
+
+例： ip link set eth0 down     ip link show  
+
+object为address时 用于设置本机ip
+
+
+
+ip addr { add | del } IFADDR dev STRING: 对指定网络接口添加或删除IP地址
+
+ip addr { show | flush } [ dev STRING ]: 查看或清空指定设备的IP地址
+
+add IP/MASK: 为设备添加地址
+
+delete IP: 删除设备配置的地址
+
+flush: 清空指定设备中的配置
+
+show: 查看IP地址配置
+
+通过add命令添加指定IP地址
+
+ip addr 192.168.1.88/24 dev eth0    && ip addr show dev eth0
+
+
+
+object 为 route 时 用于设置本机路由条目
+
+ip route { list | flush } SELECTOR: 查看或清空路由条目
+
+ip route { add | del | change | append | replace | monitor } ROUTE: 修改路由条目
+
+add 添加路由条目
+
+ip route add 0/0 via 10.10.10.252
+
+change修改路由条目
+
+ip route change 0/0 via 192.168.1.2 dev eth0
+
+
+
+（ip route ip rule iptables 关系）https://www.cnblogs.com/EasonJim/p/8424731.html
+
+
 
 
 

@@ -187,7 +187,9 @@ BGP Route Reflector 大规模部署时使用 并且所有节点的mesh模式 通
 
 ·
 
+#9.关于iptables和calico一些笔记
 
+1. 在每个node节点上calico会创建一个tunl0的网桥 （网段）（目前使用calico主要还是以ipip方式）这个节点的所有pod都会被分配这个网段的ip
 
 
 

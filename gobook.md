@@ -1125,7 +1125,7 @@ func InverseFuture(a Matrix) {
 
 ## 11.常见错误
 
-- 误用短声明变量导致变量覆盖
+####误用短声明变量导致变量覆盖
 
 ~~~go
 var remeber bool = false
@@ -1148,7 +1148,7 @@ if y, err := check2(x); err != nil { // y和if语句中err被创建
 }
 ~~~
 
-- 字符串的使用
+####字符串的使用
 
 ~~~go
 //对字符串频繁操作时 go中的字符串是不可变的（类似于java）使用 a += b形式连接字符串效率低 应该使用一个字符数组 将字符串内容写入一个内存中
@@ -1159,7 +1159,7 @@ for condition{
 return b.String()
 ~~~
 
-- defer正确用法
+####defer正确用法
 
 ~~~go
 //错误方式
@@ -1185,14 +1185,14 @@ for _, file := range files{
 //defer仅在函数返回时才会执行，在循环的结尾或其他一些有限范围的代码内不会执行
 ~~~
 
-- new make
+####new make
 
 ~~~go
 - 切片 映射 通道 使用make
 - 数组 结构体 所有的值类型 使用new
 ~~~
 
-- 不需要将一个指向切片的指针传递给函数
+####不需要将一个指向切片的指针传递给函数
 
 ~~~go
 //切片实际是一个指向潜在数组的指针，把切片作为参数传递给函数 实际是传递一个指向变量的指针 在函数内可以改变这个变量 而不是传递数据的拷贝
@@ -1202,7 +1202,7 @@ func findBiggest(listOfNumbers []int) int{}
 func findBiggest(lsitOfNumbers *[]int) int{}
 ~~~
 
-- 使用指针指向接口类型
+####使用指针指向接口类型
 
 ~~~go
 type nexter interface {
@@ -1225,7 +1225,7 @@ func nextFew2(n *nexter, num int) []byte {
 //永远不要使用一个指针指向一个接口类型，因为它已经是一个指针
 ~~~
 
-- 闭包协程的使用
+####闭包协程的使用
 
 ~~~go
 //A
@@ -1267,7 +1267,7 @@ var values = [5]int{10, 11, 12, 13, 14}
 //因为版本D中的变量声明是在循环体内部，所以在每次循环时，这些变量相互之间是不共享的，所以这些变量可以单独的被每个闭包使用。
 ~~~
 
-- 错误处理
+####错误处理
 
 ~~~go
 //错误的方式
@@ -1300,7 +1300,7 @@ func httpRequestHandler(w http.ResponseWriter, req *http.Request){
 }
 ~~~
 
-- 错误或者bool返回的形式
+####错误或者bool返回的形式
 
 ~~~go
 //在函数返回时检测错误
@@ -1323,6 +1323,24 @@ for{
         break
     }
     Process(input)
+}
+~~~
+
+#### 常见错误 invalid memory address or nil pointer dereference
+
+~~~go
+func main() {
+	var i *int
+	*i = 1
+    fmt.Println(i, &i, *i)
+}
+//1.报错原因：报这个错的原因是 go 初始化指针的时候会为指针 i 的值赋为 nil ，但 i 的值代表的是 *i 的地址， nil 的话系统还并没有给 *i 分配地址，所以这时给 *i 赋值肯定会出错
+//2.解决方法： 解决这个问题非常简单，在给指针赋值前可以先创建一块内存分配给赋值对象即可
+func main() {
+	var i *int
+	i = new(int)
+	*i = 1
+	fmt.Println(i, &i, *i)
 }
 ~~~
 
@@ -1949,6 +1967,35 @@ func main(){
     root.BreadFirstSearch()
 } 
 ~~~
+
+## 16.位运算
+
+~~~shell
+1.位移操作 << : 向左移位 可以看做是乘以2的几次方
+2.位移操作 >> : 向右移位 可以看做除以2的几次方
+3.and操作 & : 都为1 才是1
+4.or操作 | : 只要有一个是1 那么就是1
+5.取反 ^ : 有一个为1 则为1 两个1或者两个两个0 全是0
+6.标志位操作 &^ : a &^ b = (a^b) & b 其实就是清除标记位
+
+func main(){
+		const a = 2   //0010
+	const b = 6   //0110
+	const c = 11  //1011
+	var d = a ^ c //1001 9
+	Println(d)
+	d = b &^ c //0110 1011
+	Println(d) //0100
+	Println(1 << 2) // 0001 --> 0100
+	a1 := 4
+	a1 |= 1 << 4
+	Println(a1) //20
+	a1 |= 1 << 3
+	Println(a1) //28
+}
+~~~
+
+
 
 
 
