@@ -1,9 +1,26 @@
+### -1.改变目录所有者和权限
+
+chown -R gaoxin:gaoxin /opt
+
+chmod 777 /opt
+
 ### 0.配置阿里yum源
 
 ~~~shell
 #配置阿里yum源命令
 curl -o /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
 curl -o /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
+
+下载repo 到 /etc/yum.repos.d/
+epel(RHEL7)
+wget -O /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
+
+#运行以下命令生成缓存
+yum clean all
+yum makecache
+
+
+
 ~~~
 
 ### 1.rpm
@@ -29,6 +46,7 @@ https://blog.csdn.net/zhaoyue007101/article/details/8485186
 ```shell
 #查看系统发行版本
 lsb_release -a
+cat /etc/redhat-release
 #查看linux内核版本
 uname -a
 ```
@@ -48,21 +66,16 @@ systemctl enable tmp.mount
 
 #可以在/etc/fstab中添加下面这行，来手工在/tmp下挂载 tmpfs
 tmpfs /tmp tmpfs size=512m 0 0
-
-
-
-
-
 ~~~
 
 ### 4.mount命令用法
 
 ~~~shell
 挂载方法： mount DECE MOUNT_POINT
--t vsftype: 指定要挂载的设备上的文件系统类型
--r readonly : 只读挂载
--w read and write: 读写挂载
--L :以卷标指定挂载设备
+-t vsftype: 指定要挂载的设备上的文件系统类型 
+-r readonly : 只读挂载  
+-w read and write: 读写挂载   
+-L :以卷标指定挂载设备 
 -U : 以uuid指定要挂载的设备
 -B --bind : 绑定目录到另一个目录上
 
@@ -132,13 +145,13 @@ https://www.cnblogs.com/Dicky-Zhang/p/5934657.html
 -v 显示版本号
 -q 不显示运行信息
 -n 显示已完成的指令情况
--t --timeout N 指定运行N秒后结束
---backup N 指定N微秒后运行
+-t --timeout N 指定运行N秒后结束 
+--backup N 指定N微秒后运行 
 -c 产生n个进程 每个进程都反复不停的计算随机数的平方根
 -i 产生n个进程 每个进程反复调用sync()，sync()用于将内存上的内容写到硬盘上
 -m --vm n 产生n个进程,每个进程不断调用内存分配malloc和内存释放free函数
 --vm-bytes B 指定malloc时内存的字节数 （默认256MB）
---vm-hang N 指定在free钱的秒数
+--vm-hang N 指定在free前的秒数
 -d --hadd n 产生n个执行write和unlink函数的进程
 -hadd-bytes B 指定写的字节数
 --hadd-noclean 不unlink
@@ -224,10 +237,10 @@ $ vi /var/log/mysqld.log
 #查找密码位置
 $ /temporary password
 
-#当找不到密码时，编辑这个文件
-$ vi /etc/my.cnf
-#添加一行代码，然后重启mysql 然后输入mysql直接进入
-skip-grant-tables
+#当找不到密码时，编辑这个文件 
+$ vi /etc/my.cnf 
+#添加一行代码，然后重启mysql 然后输入mysql直接进入  
+skip-grant-tables 
 
 #设置密码
 $ set password for 'root'@'localhost'=password('password!'); 
@@ -236,17 +249,17 @@ $ grant all on *.* to root@'%' identified by 'password' with grant option;
 # 如果需要设置简单密码 
 $ set global validate_password_policy=0; 
 $ set global validate_password_length=1; 
-$ set global validate_password_mixed_case_count=2; 
+$ set global validate_password_mixed_case_count=2;  
 #增加白名单
 mysql> use mysql 
-mysql> GRANT ALL ON *.* to root@'172.28.171.176' IDENTIFIED BY 'your-root-password';  
-mysql> FLUSH PRIVILEGES; 
-
-#完全卸载mysql
-$ yum remove mysql
-$ find / -name mysql
-rm -rf /usr/lib64/mysql
-rm -rf /usr/share/mysql
+mysql> GRANT ALL ON *.* to root@'172.28.171.176' IDENTIFIED BY 'your-root-password';   
+mysql> FLUSH PRIVILEGES;  
+ 
+#完全卸载mysql 
+$ yum remove mysql 
+$ find / -name mysql 
+rm -rf /usr/lib64/mysql 
+rm -rf /usr/share/mysql 
 rm -rf /usr/bin/mysql
 rm -rf /etc/logrotate.d/mysql
 rm -rf /var/lib/mysql
@@ -528,6 +541,62 @@ ip route change 0/0 via 192.168.1.2 dev eth0
 （ip route ip rule iptables 关系）https://www.cnblogs.com/EasonJim/p/8424731.html
 
 
+
+### 22.给虚拟机添加新磁盘
+
+~~~shell
+#添加过程不做描述
+#1.添加之后重启虚拟机 
+$ shutdown -r now
+#2.使用fdisk -l 命令查看当前系统的分区
+Disk /dev/sda: 21.5 GB, 21474836480 bytes, 41943040 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk label type: dos
+Disk identifier: 0x00007915
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *        2048     2099199     1048576   83  Linux
+/dev/sda2         2099200    41943039    19921920   8e  Linux LVM
+
+Disk /dev/sdb: 21.5 GB, 21474836480 bytes, 41943040 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk label type: dos
+Disk identifier: 0xc223a63b
+
+#3.显示sdb未分区 对新建的磁盘进行分区
+$ fdisk /dev/sdb
+
+Command (m for help): 
+Command action
+
+#输入m 则会出现提示
+#再输入n （add a new partition）添加一个新分区
+#依次输入p 和 1 接着便是提示卷的起始地址和结束地址 都保持默认按回车（意思是只有一个分区）
+#输入w保存退出
+#再次使用fdisk -l 这个命令来查看会发现出现了 /dev/sdb1
+
+#4.进行格式化操作 格式化成xfs文件系统
+$ mkfs -t xfs /dev/sdb1
+#5.对分区好的磁盘进行挂载
+$ mount /dev/sdb1 /dataall
+
+#常用小命令
+$ df -lhT # 查看文件系统格式 mount 也可以 或者 file -s /dev/sda1
+~~~
+
+### 23.kill命令
+
+~~~shell
+$ kill -l pid
+# -l选项告诉kill命令启动进程的用户已注销的方式结束进程 当使用该选项时 kill命令也试图杀死所留下的子进程 但这个命令也不是总能成功 
+$ kill -9 pid
+# 强大又危险 这个命令迫使进程在运行时突然停止 进程在结束后不能自我清理 危害是导致系统资源无法正常释放 一般不推荐使用
+# 当使用该命令时，一定要通过ps -ef确认没有剩余任何僵尸进程 只能通过终止父进程来消除僵尸进程 如果僵尸进程被init收养 问题就比较严重了 杀死init进程意味着关闭系统 如果系统中有僵尸进程 并且父进程是init 僵尸进程占用了大量的系统资源 那么就需要在某个时候重启机器清除进程表了
+~~~
 
 
 

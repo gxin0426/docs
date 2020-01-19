@@ -643,6 +643,46 @@ docker pull quay.azk8s.cn/coreos/kube-state-metrics:v1.5.0
 - https://blog.51cto.com/tryingstuff/2130997?source=dra
 - https://blog.csdn.net/qq_34463875/article/details/78113382
 
+- 应用方式
+
+1. 处于安全考虑 可以将自定义的代码和工具使用Initcontainer运行 而不必添加到应用的镜像中
+2. 用不同的linux命名空间 可以使他们来自应用容器的不同文件系统权限 因此 initcontainer可以获得应用程序容器无法访问的secrets
+
+- 栗子
+
+~~~yaml
+#定义一个nginx 在nginx容器启动前更改默认起始页面内容
+apiVersion: v1
+kind: Pod
+metadata: 
+  name: myapp-pod
+  labels:
+    app: myapp
+spec:
+  initContainers:
+  - name: init-myservice
+    image: busybox
+    command: ['sh','-c','echo "this is my happy">/local/nginx/html/index.html']
+    volumeMounts:
+    - name: index-dir
+      mountPath: "/local/nginx/html/"
+  containers: 
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: index-dir
+      mounthPath: /usr/share/nginx/html
+  volumes: 
+  - name: index-dir
+    emptyDir: {}
+~~~
+
+
+
+
+
 ### 16.node 调度和隔离 亲和性 
 
 - node selector
@@ -851,7 +891,7 @@ $ sudo yum remove docker \
                   docker-latest-logrotate \
                   docker-logrotate \
                   docker-engine
-$ sudo yum install -y yum-utils \
+$sudo yum install -y yum-utils \
   device-mapper-persistent-data \
   lvm2
 $ sudo yum-config-manager \
@@ -2532,4 +2572,32 @@ type DeploymentStrategy struct {
 ```
 
  通过上面的配置，我们发现 Deployment 可以支持滚动升级的方式，这样可以在不中断服务的情况下，完成升级或者回滚过程。 
+
+### 25.几个模糊的概念
+
+1. pause容器的作用
+
+kubernetes中的pause容器主要为每个业务容器提供以下功能
+
+PID命名空间：Pod中的不同应用程序可以看到其他应用程序的进程ID
+
+网络命名空间： Pod中的多个容器能够访问同一个IP和端口范围
+
+IPC命名空间：Pod中的多个容器能够使用SystemV IPC或POSIX消息队列进行通信
+
+UTS命名空间： Pod中的多个容器共享一个主机名；Volumes（共享存储卷）
+
+2. kubernetes之pod健康检测
+
+分类： LivenessProbe和ReadinessProbe
+
+探针实现方式：ExecAction HTTPGetAction TCPSocketAction
+
+3. kubernetes安全机制步骤
+
+- Authentication：API Server认证管理
+- Authorization：API Server授权管理
+- Admission Control 准入控制
+- Service Account
+- Secret
 
