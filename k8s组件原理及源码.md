@@ -9,6 +9,8 @@ API Server提供了k8s各类资源对象的增删改查及watch等http rest接�
 3. 是资源配额控制的入口
 4. 拥有完备的集群安全机制
 
+
+
 # 2. Controller Manager
 
 - controller manager作为集群内部的管理控制中心，负责集群内的node、pod副本、服务端点endpoint、namespace、serviceaccount、resourcequota的管理，当某个node意外宕机时，controller manager会及时发现并执行自动化修复流程。
@@ -25,6 +27,49 @@ API Server提供了k8s各类资源对象的增删改查及watch等http rest接�
 # 3. Scheduler
 
 - Scheduler负责pod调度。在整个系统中起“承上启下”作用，承上：负责接收Controller Manager创建的新的pod，为其选择一个合适的node。启下：node上的kubelet接管pod的生命周期。
+
+  scheduler主要负责整个集群的资源的调度功能 将pod调度到最优的工作节点上去 更加合理的运用资源 
+
+- 调度流程
+
+  根据特定算法和策略将pod调度到合适的node上 是一个独立的二进制程序 启动之后一直监听api-server  获取PodSpec.NodeName为空的pod 对pod都创建一个binding 
+
+  在生产环境下需要考虑的问题：
+
+  1. 如何保证全部节点的调度的公平性 要知道并不是说所有节点资源分配都是一样的
+  2. 如何保证每个节点都能被分配资源
+
+  kubernetes的调度器可以采用插件化形式实现 可以方便用户进行定制和二次开发 可以自定义一个调度器并以插件形式和kubernetes进行集成 scheduler的源码位于kubernetes/pkg/scheduler 大体目录为
+
+  ~~~shell
+  kubernetes/pkg/scheduler
+  -- scheduler.go		//调度相关的具体实现
+  |-- algorithm    
+  |	|-- predicates   //节点筛选策略
+  |	|--priorities    //节点打分策略
+  |-- algorithmprovider
+  | 	|--defaults	 	//定义默认的调度器
+  ~~~
+
+  其中 scheduler创建和运行的核心程序对应的代码在pkg/scheduler/scheduler.go 如果是入口程序 查看 cmd/kube-scheduler/scheduler.go
+
+  调度主要分为三部分
+
+  1. 预选过程 过滤掉不满足条件的节点 这个过程称为predicates
+  2. 优选过程 对通过的节点按照优先级排序 称之为priorities
+  3. 最后从中选择优先级最高的节点 如果中间任何一步有错误 直接返回错误
+
+  关于筛选算法的部分可以查看：
+
+   k8s.io/kubernetes/pkg/scheduler/algorithm/predicates/predicates.go 
+
+  关于优先级的算法可以查看：
+
+   k8s.io/kubernetes/pkg/scheduler/algorithm/priorities/ 
+
+  参考文章： https://mp.weixin.qq.com/s/zXy5iYDTFxffzI7_IeLU7Q 
+
+  ​		
 
 # 4. kubelet
 
@@ -175,6 +220,19 @@ BGP Route Reflector 大规模部署时使用 并且所有节点的mesh模式 通
 ~~~
 
 - calico有基于隧道（ipip）和BGP（路由）两种方式
+- 获取calico方法
+
+```shell
+curl -O -L  https://github.com/projectcalico/calicoctl/releases/download/v3.9.5/calicoctl
+```
+
+- 获取calico部署模板
+
+```shell
+curl https://docs.projectcalico.org/v3.9/manifests/calico.yaml -O
+```
+
+
 
 # 8.BGP协议
 

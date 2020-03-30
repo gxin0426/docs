@@ -435,6 +435,87 @@ Kubernetes 提供了一个 Secrets 抽象，允许在 Docker 镜像或 Pod 定�
 
 1. server account 是由kubernetes API管理的账户。绑定到了特定的namespace，并由api server在自动创建 server account关联一套凭证 存储在secret中，这些凭证同时被挂载到pod中。从而允许kubernetes api之间的调用
 
+#### 1.理解kubelet认证和授权
+
+- 调用过程kubectl  -- > apiserver  -- > kubelet
+- kubelet通过port（默认10250）对外暴露服务 服务需要TLS认证 同时也可以通过readOnlyPort端口（默认10255，0表示关闭）对外暴露只读服务 这个是不需要认证的apiserver通过--kubelet-https 参数指定调用哪个服务 true为前者 
+
+认证过程
+
+- 配置认证方式
+
+1. tls认证
+
+   ~~~yaml
+   authentication:
+     anonymous:
+       enabled: false
+     webhook: 
+       enabled: false
+     x509:
+       clientCAFile: xxxx 
+   ~~~
+
+2. 允许anonymous 这是可以不配置客户端证书
+
+   ~~~yaml
+   authentication:
+     anonymous: 
+       enabled: true
+   ~~~
+
+3. webhook 这时可以不配置客户端证书
+
+   ~~~yaml
+   authentication:
+     webhook:
+       enabled: true
+   ~~~
+
+   这时kubelet通过bearer tokens找apiserver认证 如果存在对应的serviceaccount 则认证通过 如果2开启 则忽略x509和webhook认证；否则 如果1 和 3 同时开启 则按照1.3的顺序依次认证 任何一个认证通过则返回通过
+
+- 证书配置
+
+  kubelet对外暴露https服务 必须设置服务端证书 如果通过x509证书认证客户端 那么还需要配置客户端证书 下面说明证书配置的三种方法：
+
+  1. 手工指定证书
+
+     - 假设ca的证书和key：ca.pem ca-key.pem
+
+     - 用上述的ca生成kubelet服务端证书和key：kubelet-server.pem kubelet-server-key.pem
+
+     - 用上述ca生成apiserver使用的客户端证书和key： kubelet-client.pem kubelet-client-key.pem 证书CN为kubelet-client
+
+     - 修改kubelet的配置文件
+
+       ~~~yaml
+       tlsCerFile: kubelet-server.pem
+       tlsPrivateKeyFile: kubelet-server-key.pem
+       authentication:
+         x509:
+           clientCAFile: ca.pem
+       ~~~
+
+     - 修改apiserver参数
+
+       ~~~yaml
+       --kubelet-certificate-authority=ca.pem --kubelet-client-certificate=kubelet-client.pem --kubelet-client-key=kubelet-client-key.pem
+       ~~~
+
+     - 授权kubelet-client用户：
+
+       ~~~shell
+       kubectl create clusterrolebinding kubelet-admin --clusterrole=system:kubelet-api-admin --user=kubelet-client
+       ~~~
+
+  2. 自签名证书和key
+
+     实际上是上述过程的特化 不指定tlsCerFile和tlsPriviteKeyFile时，kubelet会自动生成服务端证书保存在--cert-dir指定目录下 文件名分别为kubelet.crt kubelet.key 这个证书是自签名的 所以apiserver不需要指定--kubelet-certificate-authority 其他配置是一样的
+
+  3. 通过TLS bootstrap机制
+
+     
+
 ### 8.kubernetes中各组件的作用
 
 - API Server： 提供资源对象的唯一操作入口，其他组件必须通过他提供的API来操作资源对象。
@@ -1140,6 +1221,7 @@ ca.crt:     1029 bytes
 
 ~~~shell
 [root@master1 ~]# curl 'https://192.168.1.155:6443/healthz/ping' -k -H 'Authorization: eyJhbGciOiJSUzI1NiIsImtpZCI6InNjZkVYem5JSDdQRkR5b0JaR285S0d5ZUVfeWNuT1dkRlVRNl91dWF2QVEifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6InRlc3QtYWRtaW4tdG9rZW4tNjJuY2oiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoidGVzdC1hZG1pbiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjBlZDBkODgxLTI4YTEtNDhhMS04Y2Q2LWFjNTRlZDg0MTk1YiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OnRlc3QtYWRtaW4ifQ.SyR6Uo_ghu-CDuhxpIMb1hpM--alwKdnoLsX0MXW9smpudVs836qD8HhZuyRH4D4TxO6iFhwdYyzl3pp3DjPKIbk1szuzgmKaRUSx4sguYzXEA_gtgfCG-7b-mGsTznsu4VWIAOVLSm9aV0A-NMc2VeSnnAMbIDZJLuAHsxSVPxYnaffU6UJkaHueu2OKMHjuSVBwu5GLYo7fs42GNm4d-wFXVjIyth1dNsiz0IFIZHjIZB3aXsY0cY82waepJa8Zns0wN6BQJvZwWcvm4KN_oeuxjasD-4lZ4F6IhhSzMoLgeKEduyjeFgRRRhRZwNHhrRGo6iLjOVOu8CcyE5EgQ'
+
 {
   "kind": "Status",
   "apiVersion": "v1",
@@ -1330,7 +1412,6 @@ echo-go
 Dockerfile
 //image-build.go
 package main
-
 import (
     "context"
     "flag"
@@ -1444,12 +1525,12 @@ func main() {
     ctx := context.Background()
     imagePushResp, err := imagePushClient.ImagePush(ctx, imageName, types.ImagePushOptions{
         RegistryAuth: base64.URLEncoding.EncodeToString(imagePushAuth),
-    })
-    if err != nil {
+    }) 
+    if err != nil {  
         fmt.Println("Err: send image push request error,", err.Error())
-        return
+        return 
     }
-    defer imagePushResp.Close()
+    defer imagePushResp.Close() 
 
     // 打印镜像推送的输出
     _, err = io.Copy(os.Stdout, imagePushResp)
@@ -1469,7 +1550,7 @@ type Command struct {
     // 这个设置在子命令中生效，对于根命令则没有意义
     Use string
 
-    // Alias 可以用来给子命令定义别名，除了使用 Use 中的第一个单词作为子命令外，你还可以使用这个 Alias
+    // Alias 可以用来给子命令定义别名，除了使用 Use 中的第一个单词作为子命令外，你还可以使用这个 Alias 
     // 里面定义的任何一个名称作为子命令名称
     Aliases []string
 
@@ -1547,26 +1628,26 @@ type Command struct {
     // PostRun 在 Run 函数执行之后执行
     PostRun func(cmd *Command, args []string)
 
-    // PostRunE 在 PostRun 之后执行，但是可以返回一个错误
-    // 一旦这个函数返回的 error 不为 nil，那么执行就中断了。
-    PostRunE func(cmd *Command, args []string) error
+    // PostRunE 在 PostRun 之后执行，但是可以返回一个错误      
+    // 一旦这个函数返回的 error 不为 nil，那么执行就中断了。    
+    PostRunE func(cmd *Command, args []string) error      
 
-    // PersistentPostRun 在 PostRun 之后执行，这个命令的子命令都将继承并执行这个函数
-    PersistentPostRun func(cmd *Command, args []string)
+    // PersistentPostRun 在 PostRun 之后执行，这个命令的子命令都将继承并执行这个函数    
+    PersistentPostRun func(cmd *Command, args []string)     
 
-    // PersistentPostRunE 和 PersistentPostRun 一样，但是可以返回一个错误
-    // 一旦这个函数返回的 error 不为 nil，那么执行就中断了。
-    PersistentPostRunE func(cmd *Command, args []string) error
+    // PersistentPostRunE 和 PersistentPostRun 一样，但是可以返回一个错误   
+    // 一旦这个函数返回的 error 不为 nil，那么执行就中断了。   
+    PersistentPostRunE func(cmd *Command, args []string) error   
 
-    // SilenceErrors 设置为 true 时可以在命令执行过程中遇到任何错误时，不显示错误
-    SilenceErrors bool
+    // SilenceErrors 设置为 true 时可以在命令执行过程中遇到任何错误时，不显示错误   
+    SilenceErrors bool   
 
-    // SilenceUsage 设置为 true 时可以在命令执行遇到输入错误时，不显示使用方法
-    SilenceUsage bool
+    // SilenceUsage 设置为 true 时可以在命令执行遇到输入错误时，不显示使用方法   
+    SilenceUsage bool   
 
-    // DisableFlagParsing 设置为 true 时将禁用选项解析功能，这样命令之后所有的内容
-    // 都将作为参数传递给命令
-    DisableFlagParsing bool
+    // DisableFlagParsing 设置为 true 时将禁用选项解析功能，这样命令之后所有的内容  
+    // 都将作为参数传递给命令   
+    DisableFlagParsing bool   
 
     // DisableAutoGenTag 在生成命令文档的时候是否显示 gen tag
     DisableAutoGenTag bool
@@ -1818,17 +1899,17 @@ type ObjectMeta struct {
     // 资源所在命名空间，无法更新
     Namespace string `json:"namespace,omitempty" protobuf:"bytes,3,opt,name=namespace"`
 
-    // SelfLink 表示该资源的 URL 只读
+    // SelfLink 表示该资源的 URL 只读  
     SelfLink string `json:"selfLink,omitempty" protobuf:"bytes,4,opt,name=selfLink"`
 
-    // UID 表示该对象基于时空的唯一性ID，由服务端在对象生成成功后创建，只读属性
-    UID types.UID `json:"uid,omitempty" protobuf:"bytes,5,opt,name=uid,casttype=k8s.io/kubernetes/pkg/types.UID"`
+    // UID 表示该对象基于时空的唯一性ID，由服务端在对象生成成功后创建，只读属性  
+    UID types.UID `json:"uid,omitempty"  protobuf:"bytes,5,opt,name=uid,casttype=k8s.io/kubernetes/pkg/types.UID"`
 
-    // 该值表示资源在系统内部的版本，属于不可修改的隐藏值。
-    ResourceVersion string `json:"resourceVersion,omitempty" protobuf:"bytes,6,opt,name=resourceVersion"`
+    // 该值表示资源在系统内部的版本，属于不可修改的隐藏值。    
+    ResourceVersion string `json:"resourceVersion,omitempty"  protobuf:"bytes,6,opt,name=resourceVersion"`      
 
     // Generation 是一个序列号，表示期望状态的某个具体的版本，由系统填充，只读属性
-    Generation int64 `json:"generation,omitempty" protobuf:"varint,7,opt,name=generation"`
+    Generation int64 `json:"generation,omitempty" protobuf:"varint,7,opt,name=generation"` 
 
     // CreationTimestamp 是资源创建成功的服务端时间，只读属性
     CreationTimestamp Time `json:"creationTimestamp,omitempty" protobuf:"bytes,8,opt,name=creationTimestamp"`
@@ -2600,4 +2681,38 @@ UTS命名空间： Pod中的多个容器共享一个主机名；Volumes（共享
 - Admission Control 准入控制
 - Service Account
 - Secret
+
+### 26.kubernetes常见报错
+
+#### 1.证书过期
+
+- 问题描述
+
+所有节点全部处于notready状态 kubelet输出日志
+
+![](image\k8s\kubeletmistake.png)
+
+~~~shell
+#查看证书的有效日期 openssl
+$ openssl x509 -in /etc/kubernetes/ssl/kubelet.crt -noout -dates
+# cfssl查看方法
+$ cfssl-certinfo -cert /etc/kubernetes/ssl/kubernetes.pem 
+
+# kubelet证书默认有效期为一年 会申请自动续约 发起csr请求 所以在集群中可以通过命令查看和通过申请
+$ kubectl get csr
+$ kubectl certificate approve {csr_name}
+
+#查看几个组件日志的命令
+$ journalctl -u kube-scheduler
+$ journalctl -xefu kubelet
+$ journalctl -u kube-apiserver
+$ journalctl -u kubelet |tail
+$ journalctl -xe
+
+$ kubectl logs --tail 200 -f kube-apiserver -n kube-system |more
+$ kubectl logs --tail 200 -f podname -n jenkins
+$ cat /var/log/messages
+~~~
+
+
 

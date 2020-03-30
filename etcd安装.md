@@ -227,9 +227,12 @@ etcd [flags]
 ### 数据备份
 
 ~~~shell
-ETCDCTL_API=3 etcdctl --endpoints $ENDPOINT snapshot save snapshotdb
+#v3数据备份
+$ ETCDCTL_API=3 etcdctl --endpoints $ENDPOINT snapshot save /opt/snapshotdb.db
 # 验证快照
-ETCDCTL_API=3 etcdctl --write-out=table snapshot status snapshotdb
+$ ETCDCTL_API=3 etcdctl --write-out=table snapshot status snapshotdb
+#数据恢复
+$ etcdctl snapshot restore /opt/snapshot.db --name m3 --data-dir= /var/lib/etcd
 
 ~~~
 

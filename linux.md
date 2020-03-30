@@ -341,16 +341,17 @@ $ brctl delif br0 eth0
 ~~~shell
 $ mkdir /usr/local/java/
 $ tar -zxvf jdk-8u171-linux-x64.tar.gz -C /usr/local/java/
+$ mv /usr/local/java/jdk1.8.0_191 /usr/local/java/jdk
 $ vi /etc/profile
 
-export JAVA_HOME=/usr/local/java/jdk1.8.0_171
+export JAVA_HOME=/usr/local/java/jdk
 export JRE_HOME=${JAVA_HOME}/jre
 export CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib
 export PATH=${JAVA_HOME}/bin:$PATH
 
 $ source /etc/profile
 #建立一个软连接
-$ ln -s /usr/local/java/jdk1.8.0_171/bin/java /usr/bin/java
+$ ln -s /usr/local/java/jdk/bin/java /usr/bin/java
 #修改链接
 $ ln -snf [新目标地址] [软连接地址]
 #删除
@@ -360,7 +361,7 @@ $ tar -zxf apache-maven-3.3.9-bin.tar.gz
 $ unzip apache-maven-3.5.4-bin.zip
 $ mv apache-maven-3.3.9 /usr/local/maven/
 $ vi /etc/profile
-M2_HOME=/usr/local/maven/apache-maven-3.5.4
+M2_HOME=/usr/local/maven/
 export PATH=${M2_HOME}/bin:${PATH}
 $ source /etc/profile
 ~~~
