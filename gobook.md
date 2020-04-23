@@ -1342,6 +1342,9 @@ func main() {
 	*i = 1
 	fmt.Println(i, &i, *i)
 }
+//第二种情况
+有可能是引入文件出现格式错误
+正确："views/block/home_block.html"  错误路径： "view/block/home_block.html"
 ~~~
 
 ## 12.出于性能考虑的使用代码片段
@@ -1994,6 +1997,51 @@ func main(){
 	Println(a1) //28
 }
 ~~~
+
+## 17. 部署go项目的命令
+
+~~~shell
+$ nohup ./goweb &> goweb.log
+$ nohup ./go > out.log 2>&1 &
+#这个意思是把标准错误2重定向到标准输出1中，而标准输出又导入文件out.log中，以结果是标准错误和标准输出都导入文件out.log里面了 一般很大的stdout和stderr当你不关心的时候可以利用/dev/null 定向到 
+$ nohup ./command > /dev/null 2>&1
+~~~
+
+## 18.字符串 整数 浮动见的转换
+
+~~~go
+//string > int
+int, err := strconv.Atoi(string)
+//string > int64
+int64, err := strconv.ParseInt(string, 10, 64)
+//第二个参数为基数（2-36）(基数是指string 所表示的数值的进制)
+//第三个参数大小表示期望转换的结果类型 值为 0 8 16 32 64
+//分别对应着 int int8 int16 int32 int64
+//int > string
+string := strconv.Itoa(int)
+//等价于
+string := strconv.FormatInt(int64(int), 10)
+//int64 > string
+string := strconv.FormatInt(int64, 10)
+//第二个参数为基数 可选2-36
+//对于无符号整型 可以使用FormatUint(i uint, base int)
+
+//float > string
+string := strconv.FormatFloat(float32, 'E',-1,32)
+string := strconv.FormatFloat(float64, 'E',-1,64)
+//'b'(-ddddp±ddd, 二进制指数)
+//'e'(-d.dddde±dd, 十进制指数)
+//'E'(-d.dddde±dd, 十进制指数)
+//'f'(-ddd.dddd, 没有指数)
+
+//string > float64
+float64, err := strconv.ParseFloat(string, 64)
+//string > float32
+float32, err := strconv.ParseFloat(string, 32)
+
+~~~
+
+
 
 
 

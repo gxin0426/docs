@@ -636,5 +636,28 @@ $ vi /etc/security/limits.conf
 
 参考文章： https://www.jianshu.com/p/20f1e96557e3
 
+### 25.linux的inotify机制
 
+自内核2.6.13起，linux提供inotify机制，以允许应用程序监控文件事件
 
+队列限制和/proc文件 
+
+- 对inotify事件做排队处理 需要消耗内核内存 正因如此 内核会对inotify机制的操作实施各种限制 超级用户可以配置/proc/sys/fs/inotify路径三个文件调整限制
+
+  1. max_queued_events
+
+     调用inotify_init()时，使用该值为新inotify实例队列中的事件数量设置上限 一旦超出这个上限 系统将生成IN_Q_OVERFLOW事件 并丢弃多余的事件 溢出事件的wd字段值为-1
+
+  2. max_user_instances
+
+     对由每个真实用户ID创建的inotify实例数的限制值
+
+     设置值的方法（ sysctl -w fs.inotify.max_user_watches="99999999" ）
+
+  3. max_user_watches
+
+     对由每个真实用户ID创建的监控项数量的限制值
+
+### 26.crontab
+
+![](image\linux\crontab.png)
