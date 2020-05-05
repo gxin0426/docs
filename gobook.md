@@ -2041,6 +2041,12 @@ float32, err := strconv.ParseFloat(string, 32)
 
 ~~~
 
+## 19. go mod
+
+~~~go
+
+~~~
+
 
 
 

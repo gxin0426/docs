@@ -2738,6 +2738,12 @@ $ cat /var/log/messages
 
 ~~~shell
 minikube start --vm-driver=none
+
+#阿里云安装
+minikube start --image-mirror-country cn \
+    --iso-url=https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.7.3.iso \
+    --registry-mirror=https://xxxxxx.mirror.aliyuncs.com \
+    --vm=false
 ~~~
 
 

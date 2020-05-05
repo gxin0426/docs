@@ -661,3 +661,39 @@ $ vi /etc/security/limits.conf
 ### 26.crontab
 
 ![](image\linux\crontab.png)
+
+
+
+### 27. firewall 常用操作
+
+~~~shell
+#对外暴露端口
+$ firewall-cmd --permanent --add-port=8080
+#只允许某一个网段访问主机的某一个端口
+$ firewall-cmd --permanent --add-rich-rule="rule family="ipv4" source address="1.1.1.1/24" port protocol="tcp" port="3306" accept" 
+#reload
+$ firewalld-cmd --reload
+#端口转发，将到本机的3306端口的访问转发到192.168.1.1服务器的3306端口
+#开启伪装IP
+$ firewalld-cmd --permanent --add-masquerade
+#配置端口转发
+$ firewalld-cmd --permanent --add-forward-port=3306:proto=tcp:toaddr=192.168.1.1.2:toport=13306
+
+
+#查看状态
+$ firewalld-cmd --state
+#查看规则
+$ firewalld-cmd --list-all
+#查看所有的防火墙策略
+$ firewalld-cmd --list-all-zones
+#重新加载配置文件
+$ firewalld-cmd --reload
+
+#查看所有打开的端口： firewall-cmd --zone=public --list-ports
+#查看区域信息:  firewall-cmd --get-active-zones
+#查看指定接口所属区域： firewall-cmd --get-zone-of-interface=eth0
+#拒绝所有包: firewalld-cmd --panic-on
+#取消拒绝状态： firewalld-cmd --panic-off
+
+~~~
+
