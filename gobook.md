@@ -2105,6 +2105,94 @@ go数据类型分为四大类 ： 基础类型 	聚合类型	引用类型	接口
 
 接口类型： 
 
+- **整数**
+
+rune类型是int32类型的同义词 常用于指明一个值是Unicode码点 这两个名称可以互换 byte类型是uint8类型的同义词 强调一个值是原始数据 而非量值 
+
+无符号整数uintptr 其大小并不明确 足以完成存放指针 uintptr 类型仅仅用于底层编程 例如go程序与c程序库或操作系统的接口界面
+
+&		位运算and
+
+|		位运算or
+
+^		位运算xor
+
+&^		位运算(and not)
+
+<<		左移
+
+.>>		右移
+
+^作为二元运算符 表示按位 “异或” 作为一元前缀运算符 则表示按位取反或按位取补
+
+~~~go
+//go中位运算的理解*************************************
+//go中的位运算 (& and) (| or) (^ xor异或) (&^ 按位清除and not) (<< 左移) (>> 右移)
+var x uint8 = 1 << 1 | 1 << 5 // 10 | 100000
+var y uint8 = 1<<1 | 1<<2 // 10 | 100
+fmt.Printf("%08b\n",x)   //00100010
+fmt.Printf("%08b\n",y)   //00000110
+fmt.Printf("%08b\n",x&y) //00000010
+fmt.Printf("%08b\n",x|y) //00100110
+fmt.Printf("%08b\n",x^y) //00100100
+fmt.Printf("%08b\n",x&^y)//00100000 若y的某一位是1 则结果对应是0
+for i := uint8(0); i < 8; i++{
+	if x&(1<<i) != 0{ //元素判定 判断哪个位是1 结果： 1 5 
+		fmt.Println(i)
+	}
+}
+ascii := 'a'
+unicode := '傻'
+newline := '\n'
+fmt.Printf("%d %[1]c %[1]q\n", ascii)
+fmt.Printf("%d %[1]c %[1]q\n", unicode)
+fmt.Printf("%d %[1]q\n", newline)
+//源码中 文字符号（rune literal）的形式是字符写在一对单引号中，如'a'，但也可以直接使用Unicode码点（codepoint）或码值转义 
+//用%c输出文字符号 如果希望带引号用%q
+
+~~~
+
+- **浮点数**
+
+NaN表示无意义的数
+
+- **复数**
+
+~~~go
+var x complex128 = complex(1,2) //1+2i
+var y complex128 = complex(3,4)
+fmt.Println(real(x*y))	//提取实部
+fmt.Println(imag(x*y))	//提取虚部
+~~~
+
+- **布尔值**
+
+~~~go
+//&& ||可以引起短路行为 所以如下表达式是安全的
+s != "" && s[0] == 'x'
+//因为&&较||优先级更高（助记窍门： &&表示逻辑乘法，||表示逻辑加法），所以如下形式的条件无须加圆括号
+if 'a' <=c && c <='z'||'A' <=c && '0' <=c && c <= '9'{//todo}
+~~~
+
+- **字符串**
+
+~~~go
+//len函数返回的是字符串的字节数（并非文字符号的数目）
+//对字符串操作四个重要的包：strings	bytes	strconv 	unicode
+
+//整数转换为字符串
+fmt.Sprintf("x=%v", 444) //%b %d %o %x
+strconv.FormatInt(int64(444), 16)
+strconv.Itoa(444)
+//字符串转整数
+strconv.Atoi("123")
+y, _ := strconv.ParseInt("123", 10, 64) //十进制 最长为64位 16表示int16 而0作为特殊值表示0 任何情况下 结果y都是int64
+
+
+~~~
+
+
+
 
 
  
