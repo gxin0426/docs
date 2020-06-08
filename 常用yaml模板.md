@@ -120,6 +120,79 @@ spec:
           storage: 1Gi
 ~~~
 
+- apps/v1
+
+~~~yaml
+apiVersion: apps/v1
+kind: StatefulSet
+
+metadata:
+  namespace: redis
+  name: redis-app
+spec:
+  serviceName: "redis-service"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+        labels:
+          app: redis
+    spec:
+      terminationGracePeriodSeconds: 20
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - redis
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: redis
+        image: "registry.cn-qingdao.aliyuncs.com/gold-faas/gold-redis:1.0"
+        command:
+          - "redis-server"
+        args:
+          - "/etc/redis/redis.conf"
+          - "--protected-mode"
+          - "no"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "100Mi"
+        ports:
+            - name: redis
+              containerPort: 6379
+              protocol: "TCP"
+            - name: cluster
+              containerPort: 16379
+              protocol: "TCP"
+        volumeMounts:
+          - name: "redis-conf"
+            mountPath: "/etc/redis"
+          - name: "redis-data"
+            mountPath: "/var/lib/redis"
+      volumes:
+      - name: "redis-conf"
+        configMap:
+          name: "redis-conf"
+          items:
+            - key: "redis.conf"
+              path: "redis.conf"
+      - name: "redis-data"
+        emptyDir: {}
+~~~
+
+
+
+
+
 ### 6.声明pvc和测试pvc的pod
 
 ~~~yaml

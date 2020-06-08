@@ -152,7 +152,7 @@ items := make([]map[int]int, 5)
 	}
 ~~~
 
-## 4.网络编程 tcp
+## 4.网络编程 tcp http相关
 
 ~~~go
 // tcp coding step
@@ -160,6 +160,51 @@ items := make([]map[int]int, 5)
 1.listen, err := net.Listen("tcp", "0.0.0.0:8889") 
 2.conn, err := listen.Accept() 
 3._, err := conn.Read(buf[0:4]) 
+~~~
+
+- **http中POST三种常用方法**（client）
+
+~~~go
+package main
+import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strings"
+)
+//post
+func httpPost(){
+	resp, err := http.Post("www.gree.com", "application/json", 		                 strings.NewReader("password"))
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
+}
+//postForm
+func httpPostForm(){
+	resp, _ := http.PostForm("www.gree.com", url.Values{"username": {"admin"}, "pwd": {"123123"}})
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
+}
+//postjson
+func httpPostJson() {
+	jsonS := []byte(`{"username": "admn", "pwd": "123123"}`)
+	url := "www"
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonS))
+	req.Header.Set("Content-type", "application/json")
+	client := &http.Client{}
+	resp, _ := client.Do(req)
+	defer resp.Body.Close()
+	statuscode := resp.StatusCode
+	head := resp.Header
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(statuscode, head, string(body))
+}
 ~~~
 
 
@@ -2017,7 +2062,7 @@ func main(){
 $ nohup ./goweb &> goweb.log
 $ nohup ./go > out.log 2>&1 &
 #这个意思是把标准错误2重定向到标准输出1中，而标准输出又导入文件out.log中，以结果是标准错误和标准输出都导入文件out.log里面了 一般很大的stdout和stderr当你不关心的时候可以利用/dev/null 定向到 
-$ nohup ./command > /dev/null 2>&1
+$ nohup ./command > /dev/null 2>&1 
 ~~~
 
 ## 18.字符串 整数 浮动见的转换
@@ -2093,7 +2138,7 @@ type name underlying-type
 //包的作用和其他语言中的库或模块类似 用于支持模块化 封装 编译隔离和重用 一个包的源代码保存在多个.go结尾的文件中
 ~~~
 
-### 基本数据
+### 1.基本数据
 
 go数据类型分为四大类 ： 基础类型 	聚合类型	引用类型	接口类型
 
@@ -2101,7 +2146,7 @@ go数据类型分为四大类 ： 基础类型 	聚合类型	引用类型	接口
 
 聚合类型： 数组	结构体
 
-引用是一大分类 其中包括多种不同类型： 指针	slice	map	函数	通道（channel）	他们的共同点事全都间接指向程序变量和状态 于是操作所引用数据就会遍及该数据的全部引用
+引用是一大分类 其中包括多种不同类型： 指针	slice	map	函数	通道（channel）	他们的共同点是全都间接指向程序变量和状态 于是操作所引用数据就会遍及该数据的全部引用
 
 接口类型： 
 
@@ -2171,7 +2216,7 @@ fmt.Println(imag(x*y))	//提取虚部
 //&& ||可以引起短路行为 所以如下表达式是安全的
 s != "" && s[0] == 'x'
 //因为&&较||优先级更高（助记窍门： &&表示逻辑乘法，||表示逻辑加法），所以如下形式的条件无须加圆括号
-if 'a' <=c && c <='z'||'A' <=c && '0' <=c && c <= '9'{//todo}
+if 'a' <=c && c <='z' || 'A' <=c && c <='Z' || '0' <=c && c <= '9'{//todo}
 ~~~
 
 - **字符串**
@@ -2187,12 +2232,466 @@ strconv.Itoa(444)
 //字符串转整数
 strconv.Atoi("123")
 y, _ := strconv.ParseInt("123", 10, 64) //十进制 最长为64位 16表示int16 而0作为特殊值表示0 任何情况下 结果y都是int64
+~~~
 
+### 2.复合数据类型
+
+- 数组
+
+~~~go
+//数组定义
+var q [3]int = [3]int{1, 3, 5}
+q := [...]int{1, 3, 4}
+//数组应用
+type Currency int
+const(
+	USD Currency = iota
+	EUR
+	GBP
+	RMB
+)
+symbol := [...]string{USD: "$", EUR: "FF", GBP: "#", RMB: "￥"}
+fmt.Println(symbol[RMB], RMB)
 
 ~~~
 
+**重点：在go中 调用一个函数的时候， 每个传入的参数都会创建一个副本，然后赋值给对应的函数变量，所以函数接受的是一个副本，而不是原始的函数。使用这种方式传递大的数组会变得很低效，并且在函数内部对数组的任何修改都仅影响副本，无法改变原始数组。这种情况下，go把数组和其他的类型都看成值传递，而在其他语言里，数组是隐式地使用引用传递**
 
+**当然， 也可以显式的传递一个数组的指针给函数，这样在函数内部对数组的任何修改都会反映到原始数组上 如下函数**
 
+~~~go
+func zero(ptr *[32]byte)  {
+	for i := range ptr{
+		ptr[i] = 0
+	}
+}
+//数组清零操作
+func zero(ptr *[32]byte) {
+    *ptr = [32]byte{}
+}
+~~~
 
+**反转数组**
 
- 
+~~~go
+func reverse(s []int) {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
+}
+//将一个slice左移n个元素的简单办法是连续reverse三次 第一次反转前n个元素 第二次反转剩下的元素 最后反转整个slice
+reverse(a[:1])
+reverse(a[1:])
+reverse(a[:])
+~~~
+
+bytes.Equal来比较两个字节slice([]byte)对于其他类型的slice 我们必须自己写函数
+
+~~~go
+func equal(x, y []string) bool{
+	if len(x) != len(y){
+		return false
+	}
+	for i := range x{
+		if x[i] != y[i]{
+			return false
+		}
+	}
+	return true
+}
+~~~
+
+slice实现一个栈
+
+~~~go
+var stack []int
+//push v
+stack = append(stack, 2)
+//栈的顶部是最后一个元素
+top := stack[len(stack)-1]
+fmt.Println(top)
+//通过弹出最后一个元素来缩减栈
+stack = stack[:len(stack)-1]
+~~~
+
+~~~go
+//从slice中移除一个元素 并保留剩余元素的顺序
+func remove(slice []int, i int) []int{
+	copy(slice[i:],slice[i+1:])
+	return slice[:len(slice)-1]
+}
+//如果不需要维持顺序
+slice[i] = slice[len(slice)-1]
+return slice[:len(slice)-1]
+~~~
+
+- map
+
+~~~
+ages := map[string]int{
+    "gx": 28,
+    "ff": 16,
+}
+等价于
+ages := make(map[string]int)
+ages["gx"] = 28
+ages["ff"] = 16
+~~~
+
+判断两个map的键值是否相等
+
+~~~go
+func equalPap(x, y map[string]int)bool{
+	if len(x) != len(y){
+		return false
+	}
+	for k, xv :=range x{
+		if yv, ok := y[k]; !ok || yv != xv{
+			return false
+		}
+	}
+	return true
+}
+~~~
+
+**注意：出于效率的考虑，大型结构体通常使用结构体指针的方式直接传递给函数或从函数中返回**
+
+~~~go
+func y(e *em)int{
+    return int
+}
+~~~
+
+**上面这种方式在函数修改结构体内容的时候是必须的，在go中这种按值调用的语言，调用的函数接受到的是实参的一个副本 并不是实参的引用**
+
+~~~go
+pp := &Point{1, 2}
+//等价于
+pp := new(Point)
+*pp = Point{1, 2}
+~~~
+
+### 3.函数
+
+#### 1.错误处理策略
+
+**1. 最常见的一种情形是将错误传递下去**， **使得在子例程中发生的错误变为主调例程的错误**
+
+~~~go
+resp, err := http.Get(url)
+if err != nil {
+    return nil, err
+}
+~~~
+
+相比之下，如果调用html.parse失败，函数将不会直接返回HTML解析的错误，因为它缺失了两个关键信息：解析器的出错信息和被解析文档的url。这种情况，函数需要构建一个新的错误并返回
+
+~~~go
+doc，err := html.Parse(resp.Body)
+resp.Body.Close()
+if err != nil{
+    return nil, fmt.Errorf("parsing %s as HTML: %v", url, err)
+}
+~~~
+
+fmt.Errorf使用fmt.Sprintf函数格式化一条错误消息并且返回一个新的错误值。我们为原始的错误消息不断的添加额外的上下文信息来建立一个可读的错误描述。当错误最终被程序的main函数处理时，他应当能够提供一个从最根本问题到总体故障的清晰因果链
+
+**2. 第二种错误处理策略， 对于不固定或者不可预测的错误，在短暂间隔后对操作进行重试是合乎情理的，超出一定的重试次数和限定的时间后再报错退出**
+
+~~~go
+//WaitForServer尝试连接URL对应的服务器
+//在一分钟内使用指数退避策略进行重试
+//所有的尝试失败后返回错误
+func WaitForServer(url string) error{
+	const timeout = 1*time.Minute
+	deadline := time.Now().Add(timeout)
+	for tries := 0; time.Now().Before(deadline); tries++{
+		_, err := http.Get(url)
+		if err == nil {
+			return nil // 成功
+		}
+		log.Printf("server not responding (%s); retrying..", err)
+		time.Sleep(time.Second<<uint(tries))
+	}
+	return fmt.Errorf("server %s failed to respond after %s", url, timeout)
+}
+~~~
+
+**3.如果依旧不能顺利进行下去，调用者能够输出错误然后优雅的停止程序，但一般这样的处理应该留给主程序部门，通常库函数应当将错误传递给调用者，除非这个错误表示一个内部一致性错误，这意味着库内部存在bug**
+
+~~~go
+//（In function main）
+if err := WaitForServer(url); err != nil{
+    fmt.Fprintf(os.Stderr, "Site is down: %v\n", err)
+    os.Exit(1)
+}
+~~~
+
+**一个更加方便的方法是通过调用log.Fatalf实现相同效果。就和所有的日志函数一样，它默认会将时间和日期作为前缀添加到错误信息前**
+
+~~~go
+if err := WaitForServer(url); err != nil {
+    log.Fatalf("Site is down: %v\n", err)
+}
+~~~
+
+**4.在一些错误情况下，只记录下错误信息然后程序继续运行。同样的，可以选择使用log包来增加日志的常用前缀**
+
+~~~go
+if err := Ping(); err != nil {
+	log.Printf("ping failed: %v; networking disabled", err)
+}
+//并且直接输出给标准错误流
+if err := Ping(); err != nil {
+	fmt.Fprintf(os.Stderr, "ping failed: %v; networking disabled", err)
+}
+//(所有log函数都会为缺少换行符的日志补充一个换行符)
+~~~
+
+**5.在某些罕见的情况下我们可以直接安全的忽略掉整个日志**
+
+~~~go
+dir, err := ioutil.TempDir("", "scratch")
+if err != nil {
+	return fmt.Errorf("failed to create temp dir: %v", err)
+}
+//...使用临时目录
+os.RemoveAll(dir) // 忽略错误 $TMPDIR 会被周期性删除
+~~~
+
+**6.文件结束标识** 	**io包保证任何由文件结束引起的读取错误，始终都将会得到一个与众不同的错误 io.EOF 定义为**
+
+~~~go
+package io
+import "errors"
+var EOF = errors.New("EOF")
+~~~
+
+**在下面的循环中，不断从标准输入中读取字符**
+
+~~~go
+in := bufio.NewReader(os.Stdin)
+for {
+	r, _, err := in.ReadRune()
+	if err == io.EOF{
+		break
+	}
+	if err != nil {
+		return fmt.Errorf("read failed: %v", err)
+	}
+	// .....使用 r ....
+}
+~~~
+
+**7.匿名函数**
+
+~~~go
+strings.Map(func(r rune)rune{return r + 1}, "HAL-9000")
+//以这种方式定义的函数能够获取到整个词法环境 因此里层的函数可以使用外层函数中的变量如下栗子：
+func main(){
+	f := squares()
+	fmt.Println(f()) //1
+	fmt.Println(f()) //4	
+	fmt.Println(f()) //9
+}
+func squares() func() int {
+	var x int
+	return func() int {
+		x++
+		return x * x
+	}
+}
+//函数squares返回了另一个函数 类型是func()int，调用squares创建了一个局部变量x而且返回了一个匿名函数，每次调用squares都会递增x的值返回x的平方。第二次调用squares函数创建第二个变量x 然后返回一个递增的新匿名函数。这个求平方的示例演示了函数变量不仅是一段代码 还可以拥有状态
+~~~
+
+**深度优先的搜索算法 解决拓扑排序问题**
+
+~~~go
+func main(){
+	var prereqs = map[string][]string{
+		"algorithms": {"data structures"},
+		"calculus": {"linear algebra"},
+
+		"compilers": {
+			"data structures",
+			"formal languages",
+			"computer organization",
+		},
+		"data structures": {"discrete math"},
+		"databases": {"data structures"},
+		"discrete math": {"intro to programming"},
+		"formal languages": {"discrete math"},
+		"networks": {"operating systems"},
+		"operating systems": {"data structures", "computer organization"},
+		"programming languages": {"data structures", "computer organization"},
+	}
+	for i, course := range topoSort(prereqs){
+		fmt.Printf("%d:\t%s\n", i+1, course)
+	}
+}
+func topoSort(m map[string][]string) []string{
+	var order []string
+	seen := make(map[string]bool)
+	var visitAll func (items []string)
+	visitAll = func(items []string) {
+		for _, item := range items{
+			if !seen[item]{
+				seen[item] = true
+				visitAll(m[item])
+				order = append(order, item)
+			}
+		}
+	}
+	var keys []string
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	visitAll(keys)
+	return order
+}
+~~~
+
+**循环变量问题（陷阱）**
+
+~~~go
+func main(){
+	var tempDirs []string
+	tempDirs = make([]string, 5, 10)
+	tempDirs[0] = "F:\\go_project\\1\\1"
+	tempDirs[1] = "F:\\go_project\\1\\2"
+	tempDirs[2] = "F:\\go_project\\1\\3"
+	tempDirs[3] = "F:\\go_project\\1\\4"
+	tempDirs[4] = "F:\\go_project\\1\\5"
+	var rmdirs []func()
+	for _, d := range tempDirs {
+			d := d // 这是重点
+			os.MkdirAll(d, 0755)
+			rmdirs = append(rmdirs, func(){
+				os.RemoveAll(d)
+			})
+	}
+	for _, rmdir := range rmdirs{
+		rmdir()
+	}
+}
+~~~
+
+**之所以将循环变量d赋值给一个新的局部变量d 是因为循环变量的作用域的规则限制 在循环中所有的循环变量公用相同的变量 即 一个可访问的存储位置**
+
+#### 2.延时函数调用
+
+~~~go
+//读取文件的方法1
+func ReadFile(filename string){
+	f, err := os.Open(filename)
+	if err != nil{
+		fmt.Println(err)
+	}
+	defer f.Close()
+	r := bufio.NewReader(f)
+	for {
+		//分行读取文件  ReadLine返回单个行，不包括行尾字节(\n  或 \r\n)
+		//data, err := r.ReadLine()
+
+		//以分隔符形式读取 比如此处设置的是\n  包括\n本身
+		str, err := r.ReadString('\n')
+		fmt.Println(str)
+		//以分隔符形式读取,比如此处设置的分割符是\n,则遇到\n就返回,且包括\n本身 直接返回字节数数组
+		//data, err := r.ReadBytes('\n')
+
+		if err == io.EOF{
+			break
+		}
+		if err != nil{
+			fmt.Println("read err",err.Error())
+			break
+		}
+	}
+}
+//方法二 一次性读取
+data, err := ioutil.ReadFile("./abc.txt")
+
+//解锁一个互斥锁
+var mu sync.Mutex
+var m = make(map[string]int)
+func lookup(key string) int{
+    mu.Lock()
+    defer mu.Unlock()
+    return m[key]
+}
+~~~
+
+### 4.goroutine channel
+
+#### 1. 简单的回声器
+
+~~~go
+//server
+func main(){
+	listener, err := net.Listen("tcp", "localhost:8899")
+	if err != nil {
+		return
+	}
+	for{
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+		io.Copy(conn, conn)
+		defer conn.Close()
+	}
+}
+//第二种server端
+func main(){
+	listener, err := net.Listen("tcp", "localhost:8899")
+	if err != nil {
+		return
+	}
+	for{
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+		input := bufio.NewScanner(conn)
+		for input.Scan(){
+			fmt.Fprintln(conn, "huisheng:  ", input.Text())
+		}
+		defer conn.Close()
+	}
+}
+//client
+func main(){
+	conn, _ := net.Dial("tcp", "localhost:8899")
+	go io.Copy(os.Stdout, conn)
+	io.Copy(conn, os.Stdin)
+	defer conn.Close()
+}
+~~~
+
+- 阻塞的最佳栗子
+
+~~~go
+//没一个goroutine 都没done堵塞 要等到<-done发送出去才能执行print
+func main(){
+	ss := []string{"rrrt", "rrrs", "dss", "fss", "bbd", "aaaq", "ddsaa", "dfweeww"}
+	done := make(chan struct{})
+	for _, f := range ss{
+		go func(f string) {
+			done <- struct{}{}
+			fmt.Println(f)
+		}(f)
+	}
+	<- done
+	<- done
+	<- done
+	time.Sleep(100* time.Millisecond)
+}
+~~~
+
+- sync.WaitGroup
+
+~~~go
+func 
+~~~
+
