@@ -1,3 +1,12 @@
+## -1.go 代理
+
+~~~go
+go env -w GOPROXY=https://goproxy.cn,direct
+go env -w GOPROXY=https://gocenter.io,direct
+~~~
+
+
+
 ## 0.变量的声明方式
 
 - string
@@ -1646,7 +1655,7 @@ go get -u -v github.com/haya14busa/goplay/cmd/goplay
 // |--data--|--next--|
 // data域存放节点值的数据域，next域存放节点的直接后继地址(位置)的指针域(链域)
 // 头指针head和终端节点
-// 单链表中每个几点的存储地址是存放在其前趋节点next域中。而开始节点无前趋，所以应该设置头指针head指向开始节点。链表由头指针唯一确定，单链表可以用头指针的名字来命名。
+// 单链表中每个节点的存储地址是存放在其前驱节点next域中。而开始节点无前趋，所以应该设置头指针head指向开始节点。链表由头指针唯一确定，单链表可以用头指针的名字来命名。
 // 终端节点无后继，所以终端节点的指针域为空，即NULL。
 //  */
  

@@ -2746,5 +2746,15 @@ minikube start --image-mirror-country cn \
     --vm=false
 ~~~
 
+### 28.kubernetes operator
+
+~~~go
+//文章
+//https://my.oschina.net/u/1464083/blog/3196723
+//https://blog.csdn.net/boling_cavalry/article/details/88917818
+~~~
+
+
+
 
 
