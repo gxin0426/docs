@@ -124,14 +124,116 @@
     5. **内存 cpu等限制**
        1. -m 300M --memory-swap -1 : --memory-swap没有限制 默认 memory+swap=2*memory
        2. -m 300M --memory-swap 1G :  允许swap+memory 等于1G
-       3. 如果容器进程出现oom docker会强制杀死错误进程 想关闭此功能 使用 --oom-kill-disable 使用ci功能时 容器要内存限制 否则有可能耗尽主机内存 非常危险
+       3. 如果容器进程出现oom docker会强制杀死错误进程 想关闭此功能 使用 **--oom-kill-disable** 使用此功能时 容器要内存限制 否则有可能耗尽主机内存 非常危险
     6. docker run --privileged 那么docker将允许访问主机除了AppArmor和selinux之外的所有进程
 12. **start**
     1. docker start -a xxxxx --attach docker会把容器中的stderr和stdout重定向到主机的stderr和stdout流中
 13. **stats**
     1. 监控查看容器资源的命令 stats命令可以统计cpu使用率 内存使用率 网络吞吐量
     2. docker stats --no-stream a68fc01cbe4e 
-14. 
+14. **tag**
+    1. docker tag box newbox
+15. **top**
+    1. top命令统计容器资源状态 包括pid ppid 如果有必要kill某个进程 可以配合exec发送kill命令
+
+#### 2.docker资源命令
+
+1. **export导出容器**
+
+   1. docker export box  > box.tar
+
+   2. docker export --output="box.tar" box
+
+   3. export 命令不会导出挂载卷组的数据 
+
+      docker run -it --rm  -v 'pwd':/mountdir box:1.0 /bin/bash
+
+      创建后查看mountdir目录 应该是和当前目录一致的
+
+      导出tar包 发现mountdir为空
+
+2. **images**
+
+   1. --all 展示所有images
+   2. --filter 筛选参数 key=value形式 目前key只有dangling和label，dangling表示悬空。意思是查找没有父文件层的临时文件层。这些文件主要产生的原因是在共建images时 修改Dockerfile中某一个命令 造成此命令之后所有临时文件层失效 虽然docker不会使用这些失效的临时文件层 但又没有删除 长久会产生很多没有父文件层的镜像数据
+   3. docker images --filter "dangling=true"可以筛选出这些镜像
+   4. 可以把镜像ID找出来一一删除    docker rmi $(docker images -f "dangling=true" -q)
+
+3. **import**
+
+   1. cat box.tar | docker import - image:tag(用户指定tag)
+
+4. **load**
+
+   1. load命令是加载镜像归档文件的命令 import加载容器导出的归档文件 load加载镜像归档文件 export导出的归档文件不包括文件系统的历史记录 只有最近一次的读写层数据 load命令导入image归档文件时会维护历史记录
+   2. docker load --input box.tar
+
+5. save
+
+   1. docker save --output test.tar stefanprodan/podinfo
+
+#### 3.DockerFile
+
+1. **FROM**
+2. **MAINTAINER**
+3. **RUN**
+4. **CMD**
+5. **LABEL**
+6. **EXPOSE**
+7. **ENV**
+8. **ADD**
+9. **COPY**
+10. **ENTRYPOINT**
+11. **VOLUME**
+12. **USER**
+13. **WORKDIR**
+14. **ONBUILD**
+
+#### 4.docker namespace
+
+![](dockerimage\dockerdaemon.png)
+
+**docker daemon 管理资源的过程**
+
+**namespace包括： mount    IPC     Network     PID     User     UTS**
+
+- NameSpace
+
+1. IPC：linux进程通信方式包括：信号量 消息队列和共享内存  容器内部的进程通信 对于宿主机来说，就是具有相同PID的进程间通信。 因此，docker首先为容器创建一个IPC namespace 允许容器内所有进程通过全局唯一的32位标识符访问共享资源。
+
+   需要注意的是 docker自身通信是通过tcp 或者socket进行 所以ipc namespace并不是为了容器自身使用 更多是为了容器内部的应用预留的 如果容器内部运行的应用需要使用message queue 就可以在同一宿主环境创建多个message queue 而不会产生干扰
+
+2. PID namespace： 容器之间的进程树相互不可见 通过PID namespace 每个容器都会有一个进程号计数器 容器内所有的进程号会被重新编号 宿主机内核会维护各个容器中的进程树 在树最顶端的进程号是1 也就是init进程 此进程会作为容器内其他所有进程的父进程 
+
+   在宿主机中 次init进程只是一个普通的进程 docker cli发送stop或者kill命令的本质 就是向init进程发送SIGSTOP信号或者SIGKILL信号。一旦容器处于顶点的Init进程被销毁 那么和其处于同一个PID namespace的所有进程都将会受到内核发送的SIGSTOP和SIGKILL信号被销毁
+
+3. UTS namespace 每个容器都拥有独立的主机名和域名资源
+
+4. network namespace 一个典型的network namespace包括 ip协议栈 ip路由 端口信息 物理设备（网卡）在linux系统中，一个物理设备最多只能被包括在一个network namespace中， docker为每个容器的network创建一对虚拟网络设备 一个名为eth0 放置在容器中 另一个vethN连接docker0上
+
+5. user namespace 隔离资源包括：用户ID 用户组ID 用户权限 但无论容器中的用户怎么变 始终对应的是宿主机环境中所创建容器的用户 而且这种关联关系通过 /proc/[pid]/uid_map 和 /proc/[pid]/gid_map 这两个文件予以保存
+
+6. mount namespace 通过格力文件挂载点的方式提供隔离的文件系统 docker 为每个容器创建一个其独有的目录 并且将此容器所依赖的镜像文件层按照先父后子的顺序 逐层挂载到此目录当中 docker 会将当前目录设置为read-only模式 对此目录所作出的所有写操作都将体现到另一个目录 这个目录就是我们说的writable文件层
+
+#### 5.docker cgroup
+
+1. **任务 task** 一个任务对应宿主机环境当中的一个 进程
+2. **子系统 subsystem** 没一个子系统是对某一项具体物理资源的控制 cup子系统 memory子系统
+3. **控制组 control group** cgroup中最基本的控制单元 一个group包含若干个任务（对应宿主环境的进程） 并且此group也会包含若干个子系统 用来控制group内的任务在指定子系统上面的资源使用
+4. **层级树 hierarchy** cgroup的调度单位 由一个或多个group组成的树状结构 每个层级树通过绑定对应的子系统进行资源调度 同时子节点继承父节点的属性
+
+- **cgroup共有十个子系统**
+  - **blkio 块设备** （磁盘 硬盘 usb） 设备io限制
+  - **cpuacct** cgroup中任务生成cpu资源使用报告
+  - **cupset** 在多cpu系统中 为cgroup中的任务分配独立的cup和内存节点
+  - **devices** 设置任务对物理设备的访问权限
+  - **freezer** 挂起或者恢复cgroup中的任务
+  - **memory** 设定cgroup中任务使用的内存限制 同时生成任务的内存资源使用报告
+  - **net_cls** 使用等级识别符 标记网络数据包 同时使用linux流量控制程序识别从具体cgroup中生成的数据包
+  - **net_prio** 对应用程序设置网络传输优先级 类似于socket 选项中的SO_PRIORITY
+  - **HugeTLB** HugeTLB页的资源控制功能
+
+通过查看 /proc/cgroups 可以查看当前操作系统支持的子系统 
 
 ### 4.容器运行时 安全工具
 

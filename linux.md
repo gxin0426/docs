@@ -756,6 +756,14 @@ S     进程状态 D不可中断的睡眠状态 R运行 S睡眠  T跟踪/停止 
 -p   显示某一个进程的资源使用情况
 ~~~
 
+-  python
+
+~~~shell
+echo '{"name":"chen","age":"11"}' |python -m json.tool
+~~~
+
+
+
 ### 30.LInux状态码的意义
 
 ~~~shell
