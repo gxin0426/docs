@@ -71,7 +71,7 @@ tmpfs /tmp tmpfs size=512m 0 0
 ### 4.mount命令用法
 
 ~~~shell
-挂载方法： mount DECE MOUNT_POINT
+挂载方法： mount Device MOUNT_POINT
 -t vsftype: 指定要挂载的设备上的文件系统类型 
 -r readonly : 只读挂载  
 -w read and write: 读写挂载   
@@ -84,6 +84,12 @@ umount DEVICE
 umount MOUNT_POINT
 #重新挂载命令
 mount -o remount /dev/shm
+
+#当加入一块新设备时 1.要对设备进行格式化（制作文件系统） 2. 将其挂载到指定目录
+#格式化
+mkfs -t ext4 /dev/sdb
+#挂载
+mount /dev/sdb /xxx/
 
 ~~~
 
@@ -274,6 +280,7 @@ rm -rf /var/logs/mysql
 ~~~shell
 du -h: 显示每个文件和目录的磁盘使用空间~~~文件的大小
 df -h：显示磁盘分区上可以使用的磁盘空间 #-a    #查看全部文件系统，单位默认KB   -h  使用-h选项以KB、MB、GB的单位来显示，可读性高~~~（最常用）
+df -T：查看磁盘格式
 free -h：可以显示Linux系统中空闲的、已用的物理内存及swap内存,及被内核使用的buffer
 
 ~~~
@@ -361,7 +368,7 @@ $ tar -zxf apache-maven-3.3.9-bin.tar.gz
 $ unzip apache-maven-3.5.4-bin.zip
 $ mv apache-maven-3.3.9 /usr/local/maven/
 $ vi /etc/profile
-M2_HOME=/usr/local/maven/
+M2_HOME=/usr/local/maven/apache-maven-3.3.9
 export PATH=${M2_HOME}/bin:${PATH}
 $ source /etc/profile
 ~~~
