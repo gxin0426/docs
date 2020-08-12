@@ -17,6 +17,45 @@
 
 文章链接：  https://i4t.com/4248.html 
 
+#### 2.overlay2原理
+
+![](dockerimage\overlay2.jpg)
+
+ 如果我们在容器中修改文件，则会反映到容器层的merged目录相关文件，容器层的diff目录相当于upperdir，其他层是lowerdir。如果之前容器层diff目录不存在该文件，则会拷贝该文件到diff目录并修改。读取文件时，如果upperdir目录找不到，则会直接从下层的镜像层中读取。 
+
+#### 3.linux cgroup
+
+**Cgroup三个组件**
+
+- cgroup是对进程分组管理的一种机制，一个cgroup包含一组进程，并可以在这个cgroup上增加Linux subsystem的各种参数配置，将一组进程和一组subsystem的系统参数关联起来
+- subsystem是一组资源控制的模块 一般包括
+  - blkio 设置对块设备比如硬盘 输入输出的访问控制
+  - cpu设置cgroup中进程的cpu被调度的策略
+  - cpuacct可以统计cgroup中进程的cpu占用
+  - cpuset在多核机器上设置cgroup中进程可以使用的cpu和内存
+  - devices控制cgroup中进程对设备的访问
+  - freezer用于挂起（suspend）和恢复（resume）cgroup中的进程
+  - memory用于控制cgroup中进程的内存占用
+  - net_cls 用于将cgroup中进程产生的网络包分类 以便linux的tc（traffic controller）可以根据分类区分出来自某个cgroup的包饼做限流和监控
+  - ns这个subsystem比较特殊，他的作用是使cgroup中的进程在新的namespace中fork新进程（NEWNS）时，创建出新一个新的cgroup，这个cgroup包含新的namespace中的进程
+- hierarchy的功能是把一组cgroup串成一个树状的结构，一个这样的树便是一个hierarchy，通过这种树状结构，Cgroup可以做到继承。比如，系统对一组定时的任务进程通过cgroup1限制了cpu的使用率，然后其中有一个定时dump日志的进程还需要限制磁盘IO，为了避免限制了磁盘IO之后影响到其他进程，就可以创建cgroup2 使其继承于cgroup1并限制磁盘的io 这样cgroup2便继承了cgroup1中对cpu使用率的限制，并且增加了对磁盘IO的限制为不影响到cgroup1的其他进程
+
+**三个组件之间的关系**
+
+通过上面组件的介绍，Cgroup是凭借三个组件的相互协作实现的 他们三个之间的关系是
+
+- 系统在创建了新的hierarchy之后，系统中所有进程都会加入这个hierarchy的cgroup根节点，这个cgroup根节点是hierarchy默认创建的
+
+- 一个subsystem只能附加到一个hierarchy上
+
+- 一个hierarchy可以附加多个subsystem
+
+- 一个进程可以作为多个cgroup的成员 但是这些cgroup必须在不同的hierarchy中
+
+- 一个进程fork出一个子进程时 子进程是和父进程在同一个cgroup中的 也可以根据需要将其移动到其他的cgroup中
+
+  
+
 ### 1.docker常见问题
 
 - ![](dockerimage\问题1.png)
@@ -89,6 +128,7 @@
 #### 1.docker基本命令
 
 1. **attach**
+  
    1. 
 2. **build**
    1. --rm=false 不删除临时镜像
@@ -100,8 +140,20 @@
    3. -m --message 提交一个commit备注信息
    4. -pause=false or true 在执行commit操作时 容器内所有进程是处于暂停状态 false表示不暂停
 4. **cp**
-   1. docker cp <containerid>:/tmp/a.txt $(home)/dockerdata
+  
+   1.  将容器96f7f14e99ab的/www目录拷贝到主机的/tmp目录中 
+   
+      ```shell
+      docker cp  96f7f14e99ab:/www /tmp/
+      ```
+   
+   2.  将主机/www/runoob目录拷贝到容器96f7f14e99ab的/www目录下  
+   
+      ```shell
+      docker cp /www/runoob 96f7f14e99ab:/www/
+      ```
 5. **create**
+  
    1. create命令只是创建一个container 并且在容器文件层的最上面添加一个读写层 容器里所有数据的变化都发生在读写层 当使用create命令后 在使用start命令启动这个容器
 6. **diff**
 7. **events**
@@ -113,8 +165,10 @@
    2. docker exec id ps -ef 
    3. docker exec id touch /tmp/a.sh
 9. **logs**
+  
    1. docker logs -f log不会退出 容器新产生的日志会显示出来
 10. **rename**
+  
     1. 重命名
 11. **run**
     1. **docker run --pid=host reh17 strace -p 1234 xxxxxx** 通过这个命令可以让新容器访问主机pid=1234的容器的strace进程了（其他还包括 --ipc --uts）
@@ -127,13 +181,16 @@
        3. 如果容器进程出现oom docker会强制杀死错误进程 想关闭此功能 使用 **--oom-kill-disable** 使用此功能时 容器要内存限制 否则有可能耗尽主机内存 非常危险
     6. docker run --privileged 那么docker将允许访问主机除了AppArmor和selinux之外的所有进程
 12. **start**
+  
     1. docker start -a xxxxx --attach docker会把容器中的stderr和stdout重定向到主机的stderr和stdout流中
 13. **stats**
     1. 监控查看容器资源的命令 stats命令可以统计cpu使用率 内存使用率 网络吞吐量
     2. docker stats --no-stream a68fc01cbe4e 
 14. **tag**
+  
     1. docker tag box newbox
 15. **top**
+  
     1. top命令统计容器资源状态 包括pid ppid 如果有必要kill某个进程 可以配合exec发送kill命令
 
 #### 2.docker资源命令

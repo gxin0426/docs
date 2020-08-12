@@ -2754,6 +2754,15 @@ minikube start --image-mirror-country cn \
 //https://blog.csdn.net/boling_cavalry/article/details/88917818
 ~~~
 
+### 29查看kubelet的证书有效时间
+
+~~~shell
+openssl x509 -in /etc/kubernetes/ssl/kubelet.crt -noout -dates
+#解决方案
+kubectl get csr
+kubectl certificate approve
+~~~
+
 
 
 

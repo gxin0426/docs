@@ -2704,3 +2704,120 @@ func main(){
 func 
 ~~~
 
+### 5.io bufio os
+
+![](image\go\bufiodiaoyong.jpg)
+
+
+
+# go的Dockerfile
+
+~~~shell
+#基础版
+FROM golang:1.14-alpine
+RUN mkdir /app
+COPY . /app
+WORKDIR /app
+RUN go build -o main . 
+CMD ["/app/main"]
+
+#进阶版
+FROM golang:alpine AS build
+
+RUN mkdir /app
+COPY . /app
+WORKDIR /app
+RUN CGO_ENABLED=0 GOOS=linux go build -o myapp
+
+### 
+FROM scratch as final
+COPY --from=build /app/myapp .
+CMD ["/myapp"]
+~~~
+
+## go写一个端口转发
+
+~~~go
+package main
+
+import (
+	"flag"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"time"
+)
+
+var targetAddr *net.TCPAddr
+
+func main() {
+	var target string
+	var port int
+
+	flag.StringVar(&target, "remoteSrv", "", "the remote server (<host>:<port>)")
+	flag.IntVar(&port, "proxyPort", 7757, "the proxy port")
+	flag.Parse()
+
+	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	targetAddr, err = net.ResolveTCPAddr("tcp", target)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	listener, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		log.Fatalf("Could not start proxy server on %d: %v\n", port, err)
+	}
+
+	fmt.Printf("Proxy server running on %d\n", port)
+	defer listener.Close()
+
+	for {
+		conn, err := listener.AcceptTCP()
+		if err != nil {
+			log.Println("Could not accept client connection", err)
+		}
+		go handleTCPConn(conn)
+	}
+}
+
+func handleTCPConn(conn *net.TCPConn) {
+	defer conn.Close()
+	log.Printf("Client '%v' connected!\n", conn.RemoteAddr())
+
+	conn.SetKeepAlive(true)
+	conn.SetKeepAlivePeriod(time.Second * 15)
+
+	client, err := net.DialTCP("tcp", nil, targetAddr)
+	if err != nil {
+		log.Println("Could not connect to remote server:", err)
+		return
+	}
+	defer client.Close()
+	log.Printf("Connection to server '%v' established!\n", client.RemoteAddr())
+
+	client.SetKeepAlive(true)
+	client.SetKeepAlivePeriod(time.Second * 15)
+
+	stop := make(chan bool)
+
+	go func() {
+		_, err := io.Copy(client, conn)
+		log.Println(err)
+		//stop <- true
+	}()
+
+	go func() {
+		_, err := io.Copy(conn, client)
+		log.Println(err)
+		stop <- true
+	}()
+
+	<-stop
+}
+~~~
+

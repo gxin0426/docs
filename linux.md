@@ -4,6 +4,12 @@ chown -R gaoxin:gaoxin /opt
 
 chmod 777 /opt
 
+
+
+**chgrp 用户名  文件名 -R**
+
+**chown 用户名  文件名 -R**
+
 ### 0.配置阿里yum源
 
 ~~~shell
@@ -68,7 +74,9 @@ systemctl enable tmp.mount
 tmpfs /tmp tmpfs size=512m 0 0
 ~~~
 
-### 4.mount命令用法
+### 4.mount命令用法和问题
+
+#### 1.mount用法
 
 ~~~shell
 挂载方法： mount Device MOUNT_POINT
@@ -91,7 +99,42 @@ mkfs -t ext4 /dev/sdb
 #挂载
 mount /dev/sdb /xxx/
 
+
+#进阶版
+$ mount
+sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime,seclabel)
+#输出信息的格式和含义
+fs_spec on fs_file type fs_vfstype (fs_mntopts)
+fs_spec:挂载的块设备或者远程文件系统
+fs_file:文件系统的挂载点
+fs_vfstype:文件系统的类型
+fs_mntopts:与文件系统的相关选项
+第一行的含义:挂载的设备是sysfs 挂载点是/sys 文件系统的类型是sysfs 括号中rw代表可读写的方式挂载文件系统 noexec表示不能再该文件系统上直接运行程序
 ~~~
+
+- overlay
+
+~~~shell
+mkdir layer1 layer2
+mkdir ./rootfs/{merged,diff,work} -p
+mount -t overlay overlay -o lowerdir=./layer1:./layer2,upperdir=./rootfs/diff,workdir=./rootfs/work ./rootfs/merged
+
+merged:挂载点
+diff: upper
+work: work
+~~~
+
+#### 2.遇到的bug
+
+~~~shell
+#问题描述
+#当创建一个新的进程并且挂载proc时，退出后在终端执行命令 mount 会出现下面的错误
+mount: failed to read mtab: No such file or directory
+#解决办法 执行下边的命令 就可以在终端执行mount命令了
+mount -t proc proc /proc
+~~~
+
+
 
 ### 5.几个常用的关机命令
 
@@ -359,6 +402,8 @@ export PATH=${JAVA_HOME}/bin:$PATH
 $ source /etc/profile
 #建立一个软连接
 $ ln -s /usr/local/java/jdk/bin/java /usr/bin/java
+
+
 #修改链接
 $ ln -snf [新目标地址] [软连接地址]
 #删除
@@ -783,5 +828,30 @@ echo '{"name":"chen","age":"11"}' |python -m json.tool
 128+x	Linux信号x的严重错误
 130		Linux信号2的严重错误 即命令通过SIGINT(Ctrl+C)终止
 255		退出状态码越界
+~~~
+
+### 31.一些有用的linux命令
+
+~~~shell
+#sort 排序
+ls -all | sort -nk5
+#-n字符串按数值比较 -k表示第几列
+
+#shuf 乱序输入文件的行
+echo -e 'a\nb\nc' | shuf
+
+#uniq 前提是内容已经排序 -c用来计数 -u用来只显示不重复的内容 -d用来只显示重复的内容
+
+#join  
+https://my.oschina.net/tinyhare/blog/828320
+~~~
+
+### 32.tar命令
+
+~~~shell
+#打包命令
+tar -cvf test.tar a b c d
+#解压命令
+tar -xvf test.tar
 ~~~
 
