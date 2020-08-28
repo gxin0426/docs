@@ -3,6 +3,7 @@
 ~~~go
 go env -w GOPROXY=https://goproxy.cn,direct
 go env -w GOPROXY=https://gocenter.io,direct
+
 ~~~
 
 

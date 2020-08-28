@@ -67,14 +67,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata: 
   name: hello-dep
+  labels: 
+    app: hello
 spec: 
   replicas: 3
+  selector:
+    matchLabels:
+      app: hello
   template:
     metadata: 
       labels:  
-        app: hello 
-        tier: backend 
-        track: stable 
+        app: hello  
     spec: 
       containers:  
       - name: hello  

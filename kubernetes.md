@@ -2743,7 +2743,12 @@ minikube start --vm-driver=none
 minikube start --image-mirror-country cn \
     --iso-url=https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.7.3.iso \
     --registry-mirror=https://xxxxxx.mirror.aliyuncs.com \
-    --vm=false
+    --driver=none
+    
+#troubleshooting：Kubernetes v1.18.0 requires conntrack to be installed in root's path
+#解决： yum install -y conntrack
+
+
 ~~~
 
 ### 28.kubernetes operator
