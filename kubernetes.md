@@ -2768,7 +2768,9 @@ kubectl get csr
 kubectl certificate approve
 ~~~
 
+### 30.filebeat发生oom-kill
 
+ https://www.jianshu.com/p/389702465461 
 
 
 
