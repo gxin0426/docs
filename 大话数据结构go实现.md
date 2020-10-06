@@ -1498,7 +1498,266 @@ func main() {
 
 ## 5.图
 
+#### 定义
 
+- **图**是由定点的无穷非空集合和顶点之间边的集合组成G(V, E)其中 G表示一个图 V是图G顶点的集合 E是图G中边的集合
+- 无向图&有向图
+- 有向边（弧）连接顶点A到D的有向边就是弧 A是弧尾 D是弧头 <A, D>表示弧 注意不能写成<D, A>
+- 无向边用小括号“()”表示，而有向边则是用尖括号“<>”表示
+- **对于具有n个顶点和e条边数的图，无向图0≤e≤n(n-1)/2，有向图0≤e≤n(n-1)**
+- 有些图的边或弧具有与它相关的数字，这种与图的边或弧相关的数叫做权（Weight）。这些权可以表示从一个顶点到另一个顶点的距离或耗费。这种带权的图通常称为网（Network）
+- 无向图中，边数是各顶点度数和的一半
+- 有向图 出度 入度
+- 第一个顶点和最后一个顶点相同的路径称为回路或环（Cycle）
+- 序列中顶点不重复出现的路径称为简单路径
+- 除了第一个顶点和最后一个顶点之外，其余顶点不重复出现的回路，称为简单回路或简单环
+- 无向图中的极大连通子图称为连通分量
+- 向图中的极大强连通子图称做有向图的强连通分量
+- 在有向图G中，如果对于每一对vi、vj∈V、vi≠vj，从vi到vj和从vj到vi都存在路径，则称G是强连通图
+- 有向图中的极大强连通子图称做有向图的强连通分量
+
+![](image\alg\Image 28.png)
+
+#### 图的存储结构
+
+- **邻接矩阵** ：图的邻接矩阵（Adjacency Matrix）存储方式是用两个数组来表示图。一个一维数组存储图中顶点信息，一个二维数组（称为邻接矩阵）存储图中的边或弧的信息。
+
+![](image\alg\linjiejuzhen.png)
+
+- **邻接表**
+  - 1.图中顶点用一个一维数组存储。当然，顶点也可以用单链表来存储，不过数组可以较容易地读取顶点信息，更加方便。
+  - 2.图中每个顶点vi的所有邻接点构成一个线性表，由于邻接点的个数不定，所以用单链表存储，无向图称为顶点vi的边表，有向图则称为顶点vi作为弧尾的出边表。
+
+![](image\alg\linjiebiao.png)
+
+
+
+- 带权邻接表
+
+![](image\alg\daiquanlinjiebiao.png)
+
+- 十字链表
+
+![](image\alg\shizilianbiao.png)
+
+- 邻接多重表
+
+![](image\alg\linjieduochongbiao.png)
+
+#### 广度优先搜索（链表）
+
+~~~go
+package graph
+
+import "fmt"
+
+/*
+朋友圈通过字典实现，以“你”（you）作为根节点，字典的键是朋友圈属主，值是朋友圈所有朋友名字，
+通过一个列表方式实现，名字按字母顺序排序。
+其次，传递创建的朋友圈给breadthFirstSearch函数，该函数是广度优先搜索算法的具体实现，
+在函数内部，首先取出you的所有朋友，如果朋友数为0，查找失败，返回false。如果朋友数不为0，
+则从you的所有朋友中取出一个朋友，并将朋友从待查找的朋友列表中删除，然后创建一个字典记录被查找过的朋友，
+避免再次查找。如果该朋友没有被检查过，则检查该朋友是否是售货员（名字以字母y结尾）。
+如果是售货员，查找成功，返回true。如果该朋友不是售货员，
+将该朋友的所有朋友又添加到待查找朋友列表中，继续查找，直到结束，实现一种类似Z字形的搜索路径。
+由示例中可以看到，查找到的售货员是peggy，而不是jonny。
+因为这里的朋友名字是按字母顺序排序，所以优先查找了bob的朋友，
+而不是claire的朋友，即peggy是朋友圈中距离you最近的售货员朋友。
+*/
+
+func createFriendCircle() map[string][]string {
+	fc := make(map[string][]string)
+	fc["you"] = []string{"alice", "bob", "claire"}
+	fc["bob"] = []string{"anuj", "peggy"}
+	fc["alice"] = []string{"peggy"}
+	fc["claire"] = []string{"thom", "jonny"}
+	fc["anuj"] = []string{}
+	fc["peggy"] = []string{}
+	fc["thom"] = []string{}
+	fc["jonny"] = []string{}
+	return fc
+}
+
+func personIsSeller(name string) bool {
+	return name[len(name)-1] == 'y'
+}
+
+
+func BFS(fc map[string][]string) bool {
+	searchList := fc["you"]
+	if len(searchList) == 0 {
+		return false
+	}
+
+	serachd := make(map[string]bool)
+
+	for {
+		person := searchList[0]
+		searchList = searchList[1:]
+		_, found := serachd[person]
+		if !found {
+			fmt.Println("bianli :    ", person)
+			if personIsSeller(person) {
+				fmt.Println(person + " is seller")
+				return true
+			}else {
+				searchList = append(searchList, fc[person]...)
+				fmt.Println("searchList:                 ", searchList)
+				serachd[person] = true
+			}
+		}
+		if len(searchList) == 0 {
+			return false
+		}
+
+	}
+	return false
+}
+~~~
+
+#### 深度优先搜索（链表）
+
+~~~go
+
+~~~
+
+#### 深度&广度（邻接矩阵）
+
+~~~go
+package graph
+
+import (
+	"container/list"
+	"fmt"
+)
+
+const  inf = 999
+
+type Graph struct {
+	vexs []string
+	vexnum int
+	edgnum int
+	matrix [6][6]int
+}
+
+func InitG(g *Graph) {
+	g.matrix[0][1] = 6
+	g.matrix[0][2] = 1
+	g.matrix[0][3] = 5
+
+	g.matrix[1][0] = 6
+	g.matrix[1][2] = 5
+	g.matrix[1][4] = 3
+
+	g.matrix[2][0] = 1
+	g.matrix[2][1] = 5
+	g.matrix[2][3] = 5
+	g.matrix[2][4] = 6
+	g.matrix[2][5] = 4
+
+	g.matrix[3][0] = 5
+	g.matrix[3][2] = 5
+	g.matrix[3][5] = 2
+
+	g.matrix[4][1] = 5
+	g.matrix[4][2] = 6
+	g.matrix[4][5] = 6
+
+	g.matrix[5][2] = 4
+	g.matrix[5][3] = 2
+	g.matrix[5][4] = 6
+
+	g.vexnum = 6
+	g.edgnum = 10
+
+	g.vexs = []string{"v0", "v1", "v2", "v3", "v4", "v5"}
+}
+
+//深度优先遍历
+func DFS(g *Graph, visit *[]bool, i int){
+	fmt.Println(g.vexs[i])
+	for j := 0; j < g.vexnum; j++{
+		if g.matrix[i][j] != inf && !(*visit)[j]{
+			(*visit)[j] = true
+			DFS(g, visit, j)
+		}
+	}
+}
+
+func DFSF(g *Graph) {
+	visit := make([]bool, 10, 10)
+	fmt.Println(visit)
+	visit[0] = true
+	DFS(g, &visit, 0)
+}
+
+//广度优先
+func BFS(g *Graph) {
+	listq := list.New()
+
+	visit := make([]bool, 10, 10)
+	visit[0] = true
+	listq.PushBack(0)
+	fmt.Println("listq", listq)
+	for listq.Len() > 0 {
+		index := listq.Front()
+		fmt.Println(g.vexs[index.Value.(int)])
+		for i:= 0; i < g.vexnum; i++{
+			if !visit[i] && g.matrix[index.Value.(int)][i] != inf {
+				visit[i] = true
+				listq.PushBack(i)
+			}
+		}
+		listq.Remove(index)
+	}
+
+}
+~~~
+
+- test
+
+~~~go
+package graph
+
+import (
+	"fmt"
+	"testing"
+)
+
+func TestInitG(t *testing.T){
+	var g Graph
+	InitG(&g)
+
+	for i := 0; i < 6; i++{
+		for j := 0; j < 6; j++{
+			fmt.Print(g.matrix[i][j], " ")
+		}
+		fmt.Println()
+	}
+}
+
+func TestDFSF(t *testing.T) {
+	var g Graph
+	for i := 0; i < 6; i++{
+		for j := 0; j < 6; j++{
+			g.matrix[i][j] = inf
+		}
+	}
+	InitG(&g)
+	DFSF(&g)
+}
+
+func TestBFS(t *testing.T) {
+	var g Graph
+	for i := 0; i < 6; i++{
+		for j := 0; j < 6; j++{
+			g.matrix[i][j] = inf
+		}
+	}
+	InitG(&g)
+	BFS(&g)
+}
+~~~
 
 ## 6.查找
 
@@ -1680,23 +1939,235 @@ func isSameSlice2(a, b []int) bool {
 
 ### 3.直接插入排序
 
+~~~GO
+package mysort
+
+func InsertSort(a []int) []int {
+	var temp int
+	var j int
+	for i := 1; i < len(a); i++{
+		temp = a[i]
+		for j = i; j > 0 && temp < a[j-1]; j-- {
+				a[j] = a[j-1]
+		}
+		a[j] = temp
+	}
+	return a
+}
+~~~
+
+- 测试
+
+~~~go
+package mysort
+
+import (
+	"fmt"
+	"testing"
+)
+
+func TestInsertSort(t *testing.T) {
+	b := []int{2, 3, 4, 5, 6, 7, 25}
+	a := []int{5, 7, 3, 6, 4, 25, 2}
+	fmt.Println(InsertSort(a))
+	if !isSameSlice3(InsertSort(a), b) {
+		fmt.Println(a)
+		t.Errorf("fail")
+	}
+}
+
+func isSameSlice3(a, b []int) bool {
+	if a == nil && b == nil {
+		return true
+	}else if a == nil || b == nil {
+		return false
+	}
+
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := 0; i < len(a); i++{
+		if b[i] != a[i] {
+			return false
+		}
+	}
+	return true
+}
+~~~
+
+- **复杂度分析**：最好情况：O(n)   最坏情况： O(n<sup>2</sup>)   直接插入排序法比冒泡和简单选择排序的性能要好一些
+
+### 4.希尔排序
+
+~~~go
+package mysort
+
+import "fmt"
+
+func ShellSort(a []int) []int {
+	l := len(a)
+	h := l / 2
+	var temp int
+	var j int
+	for h >= 1 {
+		for i := h; i < l; i++{
+			fmt.Println(a)
+			temp = a[i]
+			for j = i; j >= h && temp < a[j-h]; j = j - h {
+				a[j] = a[j-h]
+			}
+			a[j] =temp
+		}
+		h = h / 2
+	}
+	return a
+}
+~~~
+
+- 测试
+
+~~~go
+package mysort
+
+import (
+	"fmt"
+	"testing"
+)
+func TestShellSort(t *testing.T) {
+	a := []int{5, 7, 8, 4, 16, 2, 1, 10, 34, 6, 3, 13}
+	fmt.Println(ShellSort(a))
+}
+~~~
+
+- **复杂度分析**：O(n<sup>3/2</sup>)
+
+### 5.堆排序
+
+- 概念
+  -  **最大堆：根结点的键值是所有堆结点键值中最大者的堆。** 
+  -  **最小堆：根结点的键值是所有堆结点键值中最小者的堆。** 
+
+~~~shell
+#主要是理解思路，思路有了代码则是水到渠成。
+
+#堆排序实际是数组排序，使用数组的下标构造成一个二叉树，想法很有意思。
+
+#加入有数组a，那可以把a[0]视为根节点，它的子节点为a[2*0+1]，a[2*0+2]，即对于任何一个节点a[i]，则有子节点#a[2*i+1]和a[2*i+2]。
+
+#1. 构建一个大顶堆，构建成功后a[0]便是最大的。
+
+#2. 之后交换a[0]和a[len(a)-1]
+
+#3. 然后在调整a[:len(a)-2]（把a[len(a)-1]排除在外）为大顶堆
+
+#4. 重复上面的步骤
+
+#5. 得到有序数组
+~~~
 
 
-### 4.希尔
 
+~~~go
+package mysort
 
+func adjustHeap(a []int, parent int, length int){
+	for{
+		child := parent*2 + 1
+		if child >= (length - 1){
+			break
+		}
+		if a[child+1] > a[child] {
+			child++
+		}
+		if a[parent] < a[child] {
+			a[parent], a[child] = a[child], a[parent]
+			parent = child
+		}else {
+			break
+		}
+	}
+}
 
-### 5.堆
+func buildHeap(a []int){
+	for i := len(a)/2 - 1; i >= 0; i-- {
+		adjustHeap(a, i, len(a))
+	}
+}
 
+func HeapSort(a []int) []int {
+	buildHeap(a)
+	for i := len(a) - 1; i >= 0; i-- {
+		a[0], a[i] = a[i], a[0]
+		adjustHeap(a, 0, i)
+	}
+	return a
+}
+~~~
 
+- 复杂度分析：O(nlogn)
 
-### 6.归并
+### 6.归并排序
 
+~~~go
+package mysort
 
+func MergeSort(a []int) []int{
+	if len(a) < 2 {
+		return a
+	}
 
-### 7.快速
+	m := len(a) / 2
+	l := MergeSort(a[:m])
+	r := MergeSort(a[m:])
+	return merge(l, r)
+}
 
+func merge(a, b []int) (c []int){
+	i, j := 0, 0
 
+	for i < len(a) && j < len(b) {
+		if a[i] <= b[j] {
+			c = append(c, a[i])
+			i++
+		}else {
+			c = append(c, b[j])
+			j++
+		}
+	}
+	c = append(c, a[i:]...)
+	c = append(c, b[j:]...)
+	return
+}
+~~~
+
+- **复杂度分析**： O(nlogn)
+
+### 7.快速排序
+
+~~~go
+func QuickSort(a []int) []int {
+	if len(a) < 2 {
+		return a
+	}else {
+		pivot := a[0]
+		var less []int
+		var more []int
+		for _, v := range a[1:]{
+			if v <= pivot {
+				less = append(less, v)
+			}else {
+				more = append(more, v)
+			}
+		}
+		var  res  []int
+		res = append(res, QuickSort(less)...)
+		res = append(res, pivot)
+		res = append(res, QuickSort(more)...)
+		return res
+	}
+}
+~~~
 
 ### 8.排序总结
 
@@ -1708,12 +2179,93 @@ func isSameSlice2(a, b []int) bool {
    4. 归并排序： 归并排序
 
 3. 稳定排序： 冒泡、简单选择、直接插入、归并
-4. 不稳定排序：希尔、堆、快速
-5. 时间复杂度
+4.  时间复杂度
    1. O(n<sup>2</sup>) ： 冒泡、简单选择、直接插入
    2. O(nlogn) ~ O(n<sup>2</sup>) ： 希尔排序
    3. O(nlogn)：堆、归并、快速
-
 6. 算法的简单性
    1. 简单算法：冒泡、简单选择、直接插入
    2. 改进算法：希尔、堆、归并、快速
+
+# 9.基于go的heap包构造优先队列
+
+~~~go
+//heap
+package heapAndPriorityQueue
+
+type IntHeap []int
+
+func (h IntHeap) Len() int           { return len(h) }
+func (h IntHeap) Less(i, j int) bool { return h[i] > h[j] }
+func (h IntHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+
+func (h *IntHeap) Push(x interface{}) {
+	*h = append(*h, x.(int))
+}
+
+func (h *IntHeap) Pop() interface{} {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[:n-1]
+	return x
+}
+~~~
+
+~~~go
+//priotityqueue
+package heapAndPriorityQueue
+
+import "container/heap"
+
+type Item struct {
+	value    string
+	priority int
+	index    int
+}
+
+type PriorityQueue []*Item
+
+func (pq PriorityQueue) Len() int {return  len(pq)}
+func  (pq PriorityQueue) Less(i, j int) bool {return pq[i].priority > pq[j].priority}
+func (pq PriorityQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+	pq[i].index = i
+	pq[j].index = j
+}
+
+func (pq *PriorityQueue) Push(x interface{}) {
+	n := len(*pq)
+	item := x.(*Item)
+	item.index = n
+	*pq = append(*pq, item)
+}
+
+func (pq *PriorityQueue) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	item.index = -1
+	*pq = old[:n-1]
+	return item
+}
+
+func (pq *PriorityQueue) update(item *Item, value string, priority int) {
+	item.value = value
+	item.priority = priority
+	heap.Fix(pq, item.index)
+}
+~~~
+
+# 10.常用的几种算法和解题思路
+
+### 1.动态规划
+
+- 两种解题思路：自顶向下（递归+记忆化） 自底向上
+
+- leetcode70题 爬楼梯
+- 91题解码方法
+- 198 打家劫舍
+- 剑指offer46 把数字翻译成字符串
+
+- 剑指offer47礼物的最大价值

@@ -472,3 +472,46 @@ systemctl daemon-reload
 systemctl restart docker
 ~~~
 
+### 9.docker进程模型，架构分析
+
+https://segmentfault.com/a/1190000011294361
+
+~~~shell
+[root@iZwz920kp0myowdvn8v0zbZ ~]# ls /usr/bin/ | grep docker
+docker
+dockerd
+dockerd-ce
+docker-init
+docker-proxy
+[root@iZwz920kp0myowdvn8v0zbZ ~]# ls /usr/bin/ | grep ctr
+ctr
+genl-ctrl-list
+nl-tctree-list
+[root@iZwz920kp0myowdvn8v0zbZ ~]# ls /usr/bin/ | grep container
+containerd
+containerd-shim
+containerd-shim-runc-v1
+[root@iZwz920kp0myowdvn8v0zbZ ~]# ls /usr/bin/ | grep runc
+containerd-shim-runc-v1
+runc
+~~~
+
+- docker是cli
+- dockerd是docker engine守护进程 dockerd启动时会启动containerd子进程
+- dockerd与containerd通过rpc通信
+- ctr是containerd的cli
+- containerd通过shim操作runc，runc真正控制容器的生命周期
+- 启动一个容器就会启动一个shim进程
+- 真正用户想启动的进程由runc的init进程启动 runc init [args ...]
+
+~~~shell
+docker     ctr
+  |         |
+  V         V
+dockerd -> containerd ---> shim -> runc -> runc init -> process
+                      |-- > shim -> runc -> runc init -> process
+                      +-- > shim -> runc -> runc init -> process
+~~~
+
+
+
