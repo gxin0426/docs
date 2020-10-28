@@ -2045,8 +2045,10 @@ func TestShellSort(t *testing.T) {
 ### 5.堆排序
 
 - 概念
-  -  **最大堆：根结点的键值是所有堆结点键值中最大者的堆。** 
-  -  **最小堆：根结点的键值是所有堆结点键值中最小者的堆。** 
+  -  **最大堆：根结点的键值是所有堆结点键值中最大者的堆。** **（小根堆）**
+  -  **最小堆：根结点的键值是所有堆结点键值中最小者的堆。** **（大根堆）**
+  -   **每个结点的值都大于或等于其左右孩子结点的值，称为大顶堆** 
+  -   **每个结点的值都小于或等于其左右孩子结点的值，称为小顶堆** 
 
 ~~~shell
 #主要是理解思路，思路有了代码则是水到渠成。
@@ -2069,25 +2071,29 @@ func TestShellSort(t *testing.T) {
 
 
 ~~~go
-package mysort
+package sort
 
 func adjustHeap(a []int, parent int, length int){
 	for{
-		child := parent*2 + 1
-		if child >= (length - 1){
-			break
+		left := parent*2 + 1
+		right := parent*2 + 2
+		idx := parent
+		if left < length && a[left] > a[idx] {
+			idx = left
 		}
-		if a[child+1] > a[child] {
-			child++
+
+		if right < length && a[right] > a[idx] {
+			idx = right
 		}
-		if a[parent] < a[child] {
-			a[parent], a[child] = a[child], a[parent]
-			parent = child
-		}else {
-			break
+		if idx == parent {
+			 break
 		}
+		a[parent], a[idx] = a[idx], a[parent]
+		parent = idx
 	}
 }
+
+
 
 func buildHeap(a []int){
 	for i := len(a)/2 - 1; i >= 0; i-- {
@@ -2097,7 +2103,7 @@ func buildHeap(a []int){
 
 func HeapSort(a []int) []int {
 	buildHeap(a)
-	for i := len(a) - 1; i >= 0; i-- {
+	for i := len(a)-1; i >= 0; i-- {
 		a[0], a[i] = a[i], a[0]
 		adjustHeap(a, 0, i)
 	}
@@ -2167,6 +2173,57 @@ func QuickSort(a []int) []int {
 		return res
 	}
 }
+
+//快速排序重点在于写partition函数 填坑法和遍历法比较好理解
+//遍历
+func partition3(nums []int, start, end int) int{
+	index := start
+	pivot := nums[end]
+	for i := start; i <= end; i++ {
+		if nums[i] < pivot{
+			nums[i], nums[index] = nums[index], nums[i]
+			index++
+		}
+	}
+	nums[index], nums[end] = nums[end], nums[index]
+	fmt.Println(nums)
+	return index
+}
+
+//填坑
+func partition1(nums []int, l, r int) int {
+	i := l
+	j := r
+	p := nums[l]
+	for i < j {
+		for nums[j] >= p && i < j  {
+			j--
+		}
+		nums[i] = nums[j]
+		for nums[i] < p && i < j {
+			i++
+		}
+		nums[j] = nums[i]
+	}
+	nums[i] = p
+	return i
+}
+
+
+func sort(nums []int, i, j int) {
+	if i >= j {
+		return
+	}
+		mid := partition3(nums, i, j)
+		sort(nums, i, mid-1)
+		sort(nums, mid+1, j)
+
+}
+
+func Qsort(nums []int){
+	sort(nums, 0, len(nums)-1)
+}
+
 ~~~
 
 ### 8.排序总结
