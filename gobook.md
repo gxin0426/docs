@@ -956,6 +956,23 @@ if <- ch != 1000{...}
 
 - 信号量模式
 
+通过共享通道发送事件向外层goroutine发送通知报告他的完成
+
+~~~go
+ch := make(chan struct{})
+for i := 0; i < len(a); i++ {
+    go func(i int){
+        do(i)
+        ch <- struct{}{}
+    }(i)
+} 	
+for range a{
+    <-ch
+}
+~~~
+
+
+
 ~~~go
 func compute(ch chan int){
 	ch <- someComputation() // when it completes, signal on the channel.
@@ -1188,6 +1205,73 @@ func InverseFuture(a Matrix) {
         future <- Inverse(a)
     }()
     return future
+}
+~~~
+
+- ==waitGroup用法==
+
+1. 主线程为了等待其他goroutine运行完 不得不在程序尾部加time.sleep()来睡眠一段时间 这他妈是错误写法(测试可以用一用)
+
+~~~go
+func main() {
+    for i:= 0; i < 100; i++ {
+        gp fmt.Println("aa")
+    }
+    time.Sleep(time.Second)
+}
+~~~
+
+2. 可以考虑使用管道完成上述操作
+
+~~~go
+func main() {
+    c := make(chan bool, 100)
+    for i := 0; i < 100; i++ {
+        go func (i int) {
+            fmt.Println(i)
+            c <- true
+        }(i)
+    }
+    for i := 0; i< 100; i++ {
+		<- c
+    }
+}
+~~~
+
+3. 标准用法
+
+~~~go
+func main() {
+    wg := sync.WaitGroup{}
+    wg.Add(100)
+    for i := 0; i < 100; i++ {
+        go func (i int) {
+            fmt.Println(i)
+            wg.Done()
+        }(i)
+    }
+    wg.Wait()
+}
+~~~
+
+==两个注意点==
+
+1. 计数器不能为负数
+2. waitGroup对象不是一个引用类型
+
+~~~go
+func main(){
+    wg := sync.WaitGroup()
+    wg.Add(100)
+    for i:= 0; i < 100; i++{
+        go f(i, &wg)
+    }
+    wg.Wait()
+}
+
+func f(i int, wg *syuc.WaitGroup){
+    fmt.Print(i)
+    wg.Done()
 }
 ~~~
 
