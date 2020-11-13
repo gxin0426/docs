@@ -1252,6 +1252,19 @@ func main() {
     }
     wg.Wait()
 }
+
+//
+func main() {
+    wg := sync.WaitGroup{}
+    for i := 0; i < 100; i++ {
+        wg.Add(1)
+        go func (i int) {
+            fmt.Println(i)
+            wg.Done()
+        }(i)
+    }
+    wg.Wait()
+}
 ~~~
 
 ==两个注意点==
@@ -2905,4 +2918,30 @@ func handleTCPConn(conn *net.TCPConn) {
 	<-stop
 }
 ~~~
+
+# <font color=blue>go原理</font>
+
+### <font color=red>面试瞎扯版</font>
+
+#### 1.PMG模型
+
+进程是独占资源的基本单元，操作系统创建、销毁进程是非常消耗资源的。<font color=blue>线程</font>存在于进程中，是一个执行序列，我们通常把内核切换线程的行为称之为<font color=blue>上下文切换</font>，上下文切换代价也是很高的
+
+为了解决上述问题，GO构建了**==MPG==**模型
+
+![](image\interview\gocore.jpg)
+
+![](image\interview\gocore2.png)
+
+**M**（machine）： 代表一个内核线程，这个线程是操作系统来处理的，操作系统负责把他放到一个core上执行
+
+**P**（processor）：代表一个逻辑处理器，也就是执行代码的上下文环境
+
+**G**（goroutine）： 代表一个并发的代码片段
+
+简而言之， P在M上执行G
+
+操作系统的线程调度发生在内核空间，而GO中并发的基本单元goroutine存在于用户空间，其并不是由操作系统调度（go有自己的调度器），总之，goroutine比线程更加的轻量
+
+**<font color=red size=4>golang调度原理：</font>**https://juejin.im/post/6844903846284787719
 
