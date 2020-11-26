@@ -1,11 +1,11 @@
 
 
-### 1.kubernetes部署javaweb（tomcat+mysql）
+### 1.kubernetes部署（tomcat+mysql）
 
 - mysql deployment
 
   ```sh
-  apiVersion: extensions/v1beta1                  #apiserver的版本
+  apiVersion: app/v1                  #apiserver的版本
   kind: Deployment                                      #副本控制器deployment，管理pod和RS
   metadata:
     name: mysql                                            #deployment的名称，全局唯一
@@ -2772,5 +2772,71 @@ kubectl certificate approve
 
  https://www.jianshu.com/p/389702465461 
 
+### 31.创建用户并配置kubeconfig
 
+#### 1.预备知识
+
+kubernetes中有两种用户：服务账号（serviceaccount）和普通意义的用户（user），sa是由k8s管理，User通常是外部管理。User通常是人使用，而sa是某个服务、资源、程序使用的
+
+#### 2.用户验证方式
+
+尽管k8s认知用户靠的只是用户的名字，但是只需要用户名字就能请求k8s的api显然是不合理的，所以依然需要验证用户的身份，在k8s中有三种验证方式：
+
+- x509客户端证书
+
+  客户端证书验证通过为api server指定 --client-ca-file=xxx 选项启用，api server通过此ca文件来验证api请求携带的客户端证书的有效性，一旦成功，api server就会将客户端subject里的CN属性作为此次请求的用户名
+
+- 静态token文件
+
+  通过指定 --token-auth-file=SOMEFILE 选项来开启bearer token验证方式， 引用的文件时一个包括token，用户名，用户id的csv文件
+
+- 静态密码文件
+
+  通过指定basic-auth-file=SOMEFILE 选项开启密码验证
+
+#### 3.创建用户并绑定权限
+
+本文使用的是minikube环境，ca.crt文件的目录保存在 /var/lib/minikube/certs 目录下
+
+~~~shell
+#创建文件夹
+mkdir /root/gx
+#首先为用户创建一个私钥
+openssl genrsa -out gx.key 2048
+#接着用此私钥创建一个csr（证书签名请求）文件，其中我们需要在subject里带上用户信息（CN为用户名，0为用户组）
+openssl req -new -key gx.key -out gx.csr -subj "/CN=gx/O=MGM"
+#通过集群的CA证书和之前创建的csr文件，来为用户颁发证书
+openssl x509 -req -in gx.csr -CA /var/lib/minikube/certs/ca.crt -CAkey /var/lib/minikube/certs/ca.key -CAcreateserial -out gx.crt -days 365
+~~~
+
+至此，我们的用户就创建完成了，接下来开始配置kubeconfig
+
+~~~shell
+# 设置集群参数
+export KUBE_APISERVER="https://47.107.238.89:8443"
+kubectl config set-cluster kubernetes \
+--certificate-authority=/var/lib/minikube/certs/ca.crt \
+--embed-certs=true \
+--server=${KUBE_APISERVER} \
+--kubeconfig=gx.kubeconfig
+
+# 设置客户端认证参数
+kubectl config set-credentials gx \
+--client-certificate=./gx.crt \
+--client-key=./gx.key \
+--embed-certs=true \
+--kubeconfig=gx.kubeconfig
+
+# 设置上下文参数
+kubectl config set-context kubernetes \
+--cluster=kubernetes \
+--user=gx \
+--kubeconfig=gx.kubeconfig
+
+# 设置默认上下文
+kubectl config use-context kubernetes --kubeconfig=gx.kubeconfig
+
+# 给用户授权 rbac
+kubectl create clusterrolebinding gx-cluster --clusterrole=cluster-admin --user=gx
+~~~
 

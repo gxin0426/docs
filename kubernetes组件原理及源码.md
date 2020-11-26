@@ -1,4 +1,8 @@
-# 1.API SERVER
+# 0.client-go源码解析
+
+
+
+# 1.API SERVER原理及源码
 
 - **介绍**
 
@@ -11,7 +15,7 @@ API Server提供了k8s各类资源对象的增删改查及watch等http rest接�
 
 
 
-# 2. Controller Manager
+# 2. Controller Manager原理及源码
 
 - controller manager作为集群内部的管理控制中心，负责集群内的node、pod副本、服务端点endpoint、namespace、serviceaccount、resourcequota的管理，当某个node意外宕机时，controller manager会及时发现并执行自动化修复流程。
 
@@ -24,7 +28,7 @@ API Server提供了k8s各类资源对象的增删改查及watch等http rest接�
 5. endpoint controller
 6. service controller
 
-# 3. Scheduler
+# 3. Scheduler原理及源码
 
 - Scheduler负责pod调度。在整个系统中起“承上启下”作用，承上：负责接收Controller Manager创建的新的pod，为其选择一个合适的node。启下：node上的kubelet接管pod的生命周期。
 
@@ -71,11 +75,11 @@ API Server提供了k8s各类资源对象的增删改查及watch等http rest接�
 
   ​		
 
-# 4. kubelet
+# 4. kubelet原理及源码
 
 - 在kubernetes集群中，每个node节点上都会启动kubelet进程，用来处理master节点下到本节点的任务，管理pod和其中的容器。kubelet会在api server上注册节点信息，定期向master汇报节点资源使用情况，并通过cadvisor监控容器和节点资源。
 
-# 5. Kube-Proxy
+# 5. Kube-Proxy原理及源码
 
 1. Proxy是为了解决外部网络能够访问跨机器集群中容器提供的应用服务而设计的，运行在每个Minion/Node上。Proxy提供TCP/UDP   sockets的proxy，每创建一种Service，Proxy主要从etcd获取Services和Endpoints的配置信息（也可以从file获取），然后根据配置信息在Minion/Node上启动一个Proxy的进程并监听相应的服务端口，当外部请求发生时，Proxy会根据Load  Balancer将请求分发到后端正确的容器处理。
 2. Proxy不但解决了同一主宿机相同服务端口冲突的问题，还提供了Service转发服务端口对外提供服务的能力，Proxy后端使用了随机、轮循负载均衡算法。
