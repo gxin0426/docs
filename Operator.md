@@ -22,7 +22,19 @@ Operator是跟应用紧密相关的，所以其中最重要的工作就是把应
 
 helm是一个把多个kubernetes资源包装为一个单独软件包的工具，把多个应用集成在一起的概念。
 
+### 3.reconcile函数逻辑
 
+operator核心是写controller的 reconcile函数逻辑，一般过程为：
+
+- get cr -> if not found -> skip and return
+
+  -> if some other errors -> return error (controller will put it in queue and reconcile)
+
+- if deletetimestamp exists   then  do some cleanup logics and remove the finalizers 
+
+- if finalizers not exists , add finalizers (update action) 
+
+- the rest of reconcile logic is only update
 
 # 2.kubebuilder原理
 
@@ -73,7 +85,7 @@ func (r *Reflector) Run(stopCh <-chan struct{}) {
 **client-go中包含以下部分：**
 
 - **Reflector：**通过调用ListWatch接口与ApiServer通信，监听特定资源，并把资源的更新动态（event）存入DeltaFIFO队列
-- **Informer：**从Delta中拿出对象（key）， 完成此操作的函数是processLoop （informer在client-go是controller）
+- **Informer：**从Delta中拿出对象（key）， 完成此操作的函数是processLoop （informer是client-go的controller）
 - **Indexer：** 本地缓存 提供索引 方便快速查找
 
 **custom controller包含以下部分**
@@ -330,12 +342,6 @@ func main() {
 }
 
 ~~~
-
-
-
-
-
-
 
 
 

@@ -1,6 +1,6 @@
 
 
-### 0.docker原理
+### docker原理（架构 & overlay2）
 
 ####1.docker是一个c/s架构主要组件包括
 
@@ -19,56 +19,53 @@
 
 #### 2.overlay2原理
 
+- **overlay文件系统**
+
 ![](dockerimage\overlay2.jpg)
 
  如果我们在容器中修改文件，则会反映到容器层的merged目录相关文件，容器层的diff目录相当于upperdir，其他层是lowerdir。如果之前容器层diff目录不存在该文件，则会拷贝该文件到diff目录并修改。读取文件时，如果upperdir目录找不到，则会直接从下层的镜像层中读取。 
 
-#### 3.linux cgroup
+- **overlay2文件系统**
 
-**Cgroup三个组件**
+当我们docker pull ubuntu 镜像时，会下载三层镜像（对应三个目录），当我们docker run ubuntu时，会新创建连个目录 如图
 
-- cgroup是对进程分组管理的一种机制，一个cgroup包含一组进程，并可以在这个cgroup上增加Linux subsystem的各种参数配置，将一组进程和一组subsystem的系统参数关联起来
-- subsystem是一组资源控制的模块 一般包括
-  - blkio 设置对块设备比如硬盘 输入输出的访问控制
-  - cpu设置cgroup中进程的cpu被调度的策略
-  - cpuacct可以统计cgroup中进程的cpu占用
-  - cpuset在多核机器上设置cgroup中进程可以使用的cpu和内存
-  - devices控制cgroup中进程对设备的访问
-  - freezer用于挂起（suspend）和恢复（resume）cgroup中的进程
-  - memory用于控制cgroup中进程的内存占用
-  - net_cls 用于将cgroup中进程产生的网络包分类 以便linux的tc（traffic controller）可以根据分类区分出来自某个cgroup的包饼做限流和监控
-  - ns这个subsystem比较特殊，他的作用是使cgroup中的进程在新的namespace中fork新进程（NEWNS）时，创建出新一个新的cgroup，这个cgroup包含新的namespace中的进程
-- hierarchy的功能是把一组cgroup串成一个树状的结构，一个这样的树便是一个hierarchy，通过这种树状结构，Cgroup可以做到继承。比如，系统对一组定时的任务进程通过cgroup1限制了cpu的使用率，然后其中有一个定时dump日志的进程还需要限制磁盘IO，为了避免限制了磁盘IO之后影响到其他进程，就可以创建cgroup2 使其继承于cgroup1并限制磁盘的io 这样cgroup2便继承了cgroup1中对cpu使用率的限制，并且增加了对磁盘IO的限制为不影响到cgroup1的其他进程
+![](dockerimage\overlay2-2.png)
 
-**三个组件之间的关系**
+- l目录是对各层的符号链接，其只是为了减少mount参数可能到达的限制而已
 
-通过上面组件的介绍，Cgroup是凭借三个组件的相互协作实现的 他们三个之间的关系是
+~~~shell
+[root@gx /]# ll /var/lib/docker/overlay2/l
+total 0
+lrwxrwxrwx 1 root root 72 Dec  4 09:40 CQPH7OESN367ZPFHDQ5FCVVWMU -> ../ca69f8cb387e039952fd1a51201ffb3fedf9557a5dc24d34dfaf404a3ae5a350/diff
+lrwxrwxrwx 1 root root 72 Dec  4 09:40 EVJI5KQX6MXRAHYUOPDNQBLI6Z -> ../5b0a8052ca5b1704333859e7a7b19c1e2474316b78bf93f859f6b870bb9337e6/diff
+lrwxrwxrwx 1 root root 72 Dec  4 10:11 KMZNYIBGYC3PXGGBDAQDRO4TND -> ../dc9e0f53aa261c03642a2caccf1e847b31d0aab0940ddb535eb2cf6ab76e303b/diff
+lrwxrwxrwx 1 root root 72 Dec  4 09:40 QQANRO5E3RB3ZQCMHFXGHISN6F -> ../80c0ab58aed3299791e31c8302a77ad0b50eb551baa85740d645f87b7479fbce/diff
+lrwxrwxrwx 1 root root 77 Dec  4 10:11 UCY6PUHNP7CR5LYOMR66HFNVZX -> ../dc9e0f53aa261c03642a2caccf1e847b31d0aab0940ddb535eb2cf6ab76e303b-init/diff
+~~~
 
-- 系统在创建了新的hierarchy之后，系统中所有进程都会加入这个hierarchy的cgroup根节点，这个cgroup根节点是hierarchy默认创建的
+- 容器的读写层目录结构为：
 
-- 一个subsystem只能附加到一个hierarchy上
+![](dockerimage\overlay2-3.png)
 
-- 一个hierarchy可以附加多个subsystem
+其中，diff目录是包含容器中修改的内容； link为符号链接内容； lower目录为当前容器所使用到的镜像层；  merged目录是联合挂载后的目录 也就是在容器内看到的目录； work目录则是用来完成如copy-on_write的操作
 
-- 一个进程可以作为多个cgroup的成员 但是这些cgroup必须在不同的hierarchy中
+当我们在容器内创建一个文件时，我们可以在diff目录中看到
 
-- 一个进程fork出一个子进程时 子进程是和父进程在同一个cgroup中的 也可以根据需要将其移动到其他的cgroup中
+- mount信息
 
-  
+![](dockerimage\mountmessage.png)
 
-### 1.docker常见问题
+~~~shell
+overlay on /var/lib/docker/overlay2/dc9e0f53aa261c03642a2caccf1e847b31d0aab0940ddb535eb2cf6ab76e303b/merged 
+type overlay 
+(rw,relatime,
+lowerdir=/var/lib/docker/overlay2/l/UCY6PUHNP7CR5LYOMR66HFNVZX:/var/lib/docker/overlay2/l/EVJI5KQX6MXRAHYUOPDNQBLI6Z:/var/lib/docker/overlay2/l/QQANRO5E3RB3ZQCMHFXGHISN6F:/var/lib/docker/overlay2/l/CQPH7OESN367ZPFHDQ5FCVVWMU,
+upperdir=/var/lib/docker/overlay2/dc9e0f53aa261c03642a2caccf1e847b31d0aab0940ddb535eb2cf6ab76e303b/diff,
+workdir=/var/lib/docker/overlay2/dc9e0f53aa261c03642a2caccf1e847b31d0aab0940ddb535eb2cf6ab76e303b/work
+)
+~~~
 
-- ![](dockerimage\问题1.png)
 
-- 原因：此linux内核中的selinux不支持overlay2 graph driver ，解决办法有两个
-
-  - 启动一个新内核
-
-  - 在docker里禁用selinux（--selinux-enabled=false）
-
-    修改 /etc/sysconfig/docker中的--selinux-enabled=false
-
-  - 重启docker
 
 ### 2.docker 自带仓库 registry
 
@@ -119,9 +116,6 @@
   
   ```
 
-  
-
-  
 
 ### 3.docker 命令
 
@@ -245,52 +239,6 @@
 12. **USER**
 13. **WORKDIR**
 14. **ONBUILD**
-
-#### 4.docker namespace
-
-![](dockerimage\dockerdaemon.png)
-
-**docker daemon 管理资源的过程**
-
-**namespace包括： mount    IPC     Network     PID     User     UTS**
-
-- NameSpace
-
-1. IPC：linux进程通信方式包括：信号量 消息队列和共享内存  容器内部的进程通信 对于宿主机来说，就是具有相同PID的进程间通信。 因此，docker首先为容器创建一个IPC namespace 允许容器内所有进程通过全局唯一的32位标识符访问共享资源。
-
-   需要注意的是 docker自身通信是通过tcp 或者socket进行 所以ipc namespace并不是为了容器自身使用 更多是为了容器内部的应用预留的 如果容器内部运行的应用需要使用message queue 就可以在同一宿主环境创建多个message queue 而不会产生干扰
-
-2. PID namespace： 容器之间的进程树相互不可见 通过PID namespace 每个容器都会有一个进程号计数器 容器内所有的进程号会被重新编号 宿主机内核会维护各个容器中的进程树 在树最顶端的进程号是1 也就是init进程 此进程会作为容器内其他所有进程的父进程 
-
-   在宿主机中 次init进程只是一个普通的进程 docker cli发送stop或者kill命令的本质 就是向init进程发送SIGSTOP信号或者SIGKILL信号。一旦容器处于顶点的Init进程被销毁 那么和其处于同一个PID namespace的所有进程都将会受到内核发送的SIGSTOP和SIGKILL信号被销毁
-
-3. UTS namespace 每个容器都拥有独立的主机名和域名资源
-
-4. network namespace 一个典型的network namespace包括 ip协议栈 ip路由 端口信息 物理设备（网卡）在linux系统中，一个物理设备最多只能被包括在一个network namespace中， docker为每个容器的network创建一对虚拟网络设备 一个名为eth0 放置在容器中 另一个vethN连接docker0上
-
-5. user namespace 隔离资源包括：用户ID 用户组ID 用户权限 但无论容器中的用户怎么变 始终对应的是宿主机环境中所创建容器的用户 而且这种关联关系通过 /proc/[pid]/uid_map 和 /proc/[pid]/gid_map 这两个文件予以保存
-
-6. mount namespace 通过格力文件挂载点的方式提供隔离的文件系统 docker 为每个容器创建一个其独有的目录 并且将此容器所依赖的镜像文件层按照先父后子的顺序 逐层挂载到此目录当中 docker 会将当前目录设置为read-only模式 对此目录所作出的所有写操作都将体现到另一个目录 这个目录就是我们说的writable文件层
-
-#### 5.docker cgroup
-
-1. **任务 task** 一个任务对应宿主机环境当中的一个 进程
-2. **子系统 subsystem** 没一个子系统是对某一项具体物理资源的控制 cup子系统 memory子系统
-3. **控制组 control group** cgroup中最基本的控制单元 一个group包含若干个任务（对应宿主环境的进程） 并且此group也会包含若干个子系统 用来控制group内的任务在指定子系统上面的资源使用
-4. **层级树 hierarchy** cgroup的调度单位 由一个或多个group组成的树状结构 每个层级树通过绑定对应的子系统进行资源调度 同时子节点继承父节点的属性
-
-- **cgroup共有十个子系统**
-  - **blkio 块设备** （磁盘 硬盘 usb） 设备io限制
-  - **cpuacct** cgroup中任务生成cpu资源使用报告
-  - **cupset** 在多cpu系统中 为cgroup中的任务分配独立的cup和内存节点
-  - **devices** 设置任务对物理设备的访问权限
-  - **freezer** 挂起或者恢复cgroup中的任务
-  - **memory** 设定cgroup中任务使用的内存限制 同时生成任务的内存资源使用报告
-  - **net_cls** 使用等级识别符 标记网络数据包 同时使用linux流量控制程序识别从具体cgroup中生成的数据包
-  - **net_prio** 对应用程序设置网络传输优先级 类似于socket 选项中的SO_PRIORITY
-  - **HugeTLB** HugeTLB页的资源控制功能
-
-通过查看 /proc/cgroups 可以查看当前操作系统支持的子系统 
 
 ### 4.容器运行时 安全工具
 
@@ -513,5 +461,233 @@ dockerd -> containerd ---> shim -> runc -> runc init -> process
                       +-- > shim -> runc -> runc init -> process
 ~~~
 
+### 10.简历docker部分（自己动手写docker）
 
+####1.Namespace介绍
+
+- **Namespace的API主要使用3个系统调用**
+  - **clone()**创建新进程。根据系统调用参数来判断哪些类型的namespace被创建，而且他们的子进程也会被包括到这些Namespace中
+  - **unshare()**将进程移出某个Namespace
+  - **setns()**将进程加入到Namespace中
+
+
+
+- **UTSNamespace**主要用来隔离nodename和domainname两个**系统标识**。（有自己的hostname）
+- **IPCNamespace**用于隔离SystemV IPC和POSIX mq，每个IPC ns 有自己的System V IPC 和POSIX mq
+- **PIDNamespace**负责隔离进程ID
+  - 使用pstree -pl找到main的pid  然后运行程序使用echo $$ 打印程序的pid。ps：这里不能用ps和top命令，因为ps，top等命令会使用/proc内容。
+- **Mount Namespace**用来隔离各个进程看到的挂载点视图。docker volume 就是利用这个特性
+- **UserNamespace**主要是隔离用户的用户组ID
+  - ps：如果使用ubuntu内核版本较高 应去掉例子中```cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(1), Gid: uint32(1)}```
+- **Network Namespace**是用来隔离网络设备、IP地址端口等网络栈的Namespace。network ns可以 让每一个容器拥有自己独立的网络设备，而且容器的应用可以绑定自己端口
+
+#### 2.Cgroup介绍
+
+**Cgroup 提供了对一组进程及将来子进程的资源限制、控制和统计的能力，这些资源包括CPU、内存、存储、网络等**
+
+Cgroup包括三个组件
+
+- cgroup是对进程分组管理的一种机制，一个cgroup包括一组进程，并可以在这个cgroup上增加Linux subsystem的各种参数配置，将一组进程和一组subsystem的系统参数关联起来
+
+- subsystem是一组资源控制的模块，一般包括如下几项：blkio、cpu、cpuacct、cpuset、devices、freezer、memory、net_cls、net_prio、ns
+
+  查看系统支持哪些subsystem，可以安装cgroup-tools 然后使用```lssubsys -a```命令查看
+
+- hierarchy的功能是吧一组cgroup串成一个树状结构，就是为了不同cgroup之间可以继承。
+
+**三者关系以及实例**：
+
+系统创建新的hierarchy之后，系统中所有的进程都会加入这个hierarchy的cgroup根节点，这个cgroup根节点是hierarchy默认创建的
+
+一个subsystem（某一项指标的设置）只能附加到一个hierarchy上
+
+一个hierarchy可以附加多个subsystem
+
+一个进程可以作为多个cgroup的成员，但这些cgroup必须在不同的hierarchy上
+
+一个进程fork出子进程时，子进程是父进程在同一个cgroup中的，也可以根据需要将其移动到其他cgroup中
+
+**例子**：
+
+~~~shell
+mkdir cgroup-test #创建一个hierarchy挂载点
+mount -t cgroup -o none,name=cgroup-test cgroup-test ./cgoup-test #挂载一个hierarchy
+#目录下文件
+-rw-r--r-- 1 root root    0 12月  3 14:30 cgroup.clone_children
+-rw-r--r-- 1 root root    0 12月  3 14:30 cgroup.procs
+-r--r--r-- 1 root root    0 12月  3 14:30 cgroup.sane_behavior
+-rw-r--r-- 1 root root    0 12月  3 14:30 notify_on_release
+-rw-r--r-- 1 root root    0 12月  3 14:30 release_agent
+-rw-r--r-- 1 root root    0 12月  3 14:30 tasks
+#cgroup.clone_children: cpuset的subsystem会读取这个配置文件 如果这个值是1（默认是0） 子cgroup才会继承父cgroup的cpuset的配置
+#cgroup.procs是树中当前节点cgroup中的进程组ID，现在的位置是在根节点，这个文件中会有系统中所有进程组的ID
+#在cgroup-test目录下创建cgroup-1 和 cgroup-2 
+tree
+#打印
+├── cgroup-1
+│   ├── cgroup.clone_children
+│   ├── cgroup.procs
+│   ├── notify_on_release
+│   └── tasks
+├── cgroup-2
+│   ├── cgroup.clone_children
+│   ├── cgroup.procs
+│   ├── notify_on_release
+│   └── tasks
+├── cgroup.clone_children
+├── cgroup.procs
+├── cgroup.sane_behavior
+├── notify_on_release
+├── release_agent
+└── tasks
+#将我们的终端进程加入cgroup-1
+[cgroup-1] sh -c "echo $$ > tasks"
+cat /proc/{id}/cgroup
+#13:name=cgroup-test:/cgroup-1
+#可以看到当前进程被加到cgroup-test:/cgroup-1
+
+#通过subsystem限制cgroup中进程的资源，上面的例子中创建的hierarchy没有关联任何的subsystem，所以没办法通过哪个hierarchy中的cgroup节点限制进程的资源占用，其实系统默认已经为每个subsystem创建了一个默认的hierarchy，比如memory的hierarchy
+ll /sys/fs/cgroup/
+#打印
+drwxr-xr-x 6 root root  0 Nov  3 19:05 blkio
+lrwxrwxrwx 1 root root 11 Nov  3 19:05 cpu -> cpu,cpuacct
+lrwxrwxrwx 1 root root 11 Nov  3 19:05 cpuacct -> cpu,cpuacct
+drwxr-xr-x 7 root root  0 Nov 13 18:35 cpu,cpuacct
+drwxr-xr-x 4 root root  0 Nov  3 19:05 cpuset
+drwxr-xr-x 6 root root  0 Nov  3 19:05 devices
+drwxr-xr-x 4 root root  0 Nov  3 19:05 freezer
+drwxr-xr-x 4 root root  0 Nov  3 19:05 hugetlb
+drwxr-xr-x 7 root root  0 Nov 13 18:35 memory
+lrwxrwxrwx 1 root root 16 Nov  3 19:05 net_cls -> net_cls,net_prio
+drwxr-xr-x 4 root root  0 Nov  3 19:05 net_cls,net_prio
+lrwxrwxrwx 1 root root 16 Nov  3 19:05 net_prio -> net_cls,net_prio
+drwxr-xr-x 4 root root  0 Nov  3 19:05 perf_event
+drwxr-xr-x 6 root root  0 Nov  3 19:05 pids
+drwxr-xr-x 6 root root  0 Nov  3 19:05 systemd
+
+#首先，在不做限制的情况下，启动一个占用内存的 stress 进程
+stress --vm-bytes 200m --vm-keep -m 1
+
+cd /sys/fs/cgroup/memory
+mkdir test-limit-memory && cd test-limit-memory
+sh -c "echo "100m" > memory.limit_in_bytes"
+sh -c "echo $$ > tasks"
+stress --vm-bytes 200m 00vm-keep -m 1
+~~~
+
+docker 是如何使用Cgroup的？
+
+启动一个docker ```sudo docker run -itd m 128m ubuntu``` 
+
+docker会为每一个容器在系统中的hierarchy中创建一个cgroup
+
+```/sys/fs/cgroup/memory/docker/89ee0e225c67855331209e006f7fc544d32cc0704249bc3ea44e39bf54c6651c```
+
+```cat memory.limit_in_bytes``` 可以看到限制memory的大小
+
+```cat memory.usage_in_bytes``` 可以看到容器当前使用memory的大小
+
+
+
+
+
+
+
+#### 4.docker namespace
+
+![](dockerimage\dockerdaemon.png)
+
+**docker daemon 管理资源的过程**
+
+**namespace包括： mount    IPC     Network     PID     User     UTS**
+
+- NameSpace
+
+1. IPC：linux进程通信方式包括：信号量 消息队列和共享内存  容器内部的进程通信 对于宿主机来说，就是具有相同PID的进程间通信。 因此，docker首先为容器创建一个IPC namespace 允许容器内所有进程通过全局唯一的32位标识符访问共享资源。
+
+   需要注意的是 docker自身通信是通过tcp 或者socket进行 所以ipc namespace并不是为了容器自身使用 更多是为了容器内部的应用预留的 如果容器内部运行的应用需要使用message queue 就可以在同一宿主环境创建多个message queue 而不会产生干扰
+
+2. PID namespace： 容器之间的进程树相互不可见 通过PID namespace 每个容器都会有一个进程号计数器 容器内所有的进程号会被重新编号 宿主机内核会维护各个容器中的进程树 在树最顶端的进程号是1 也就是init进程 此进程会作为容器内其他所有进程的父进程 
+
+   在宿主机中 次init进程只是一个普通的进程 docker cli发送stop或者kill命令的本质 就是向init进程发送SIGSTOP信号或者SIGKILL信号。一旦容器处于顶点的Init进程被销毁 那么和其处于同一个PID namespace的所有进程都将会受到内核发送的SIGSTOP和SIGKILL信号被销毁
+
+3. UTS namespace 每个容器都拥有独立的主机名和域名资源
+
+4. network namespace 一个典型的network namespace包括 ip协议栈 ip路由 端口信息 物理设备（网卡）在linux系统中，一个物理设备最多只能被包括在一个network namespace中， docker为每个容器的network创建一对虚拟网络设备 一个名为eth0 放置在容器中 另一个vethN连接docker0上
+
+5. user namespace 隔离资源包括：用户ID 用户组ID 用户权限 但无论容器中的用户怎么变 始终对应的是宿主机环境中所创建容器的用户 而且这种关联关系通过 /proc/[pid]/uid_map 和 /proc/[pid]/gid_map 这两个文件予以保存
+
+6. mount namespace 通过格力文件挂载点的方式提供隔离的文件系统 docker 为每个容器创建一个其独有的目录 并且将此容器所依赖的镜像文件层按照先父后子的顺序 逐层挂载到此目录当中 docker 会将当前目录设置为read-only模式 对此目录所作出的所有写操作都将体现到另一个目录 这个目录就是我们说的writable文件层
+
+#### 5.docker cgroup
+
+1. **任务 task** 一个任务对应宿主机环境当中的一个 进程
+2. **子系统 subsystem** 没一个子系统是对某一项具体物理资源的控制 cup子系统 memory子系统
+3. **控制组 control group** cgroup中最基本的控制单元 一个group包含若干个任务（对应宿主环境的进程） 并且此group也会包含若干个子系统 用来控制group内的任务在指定子系统上面的资源使用
+4. **层级树 hierarchy** cgroup的调度单位 由一个或多个group组成的树状结构 每个层级树通过绑定对应的子系统进行资源调度 同时子节点继承父节点的属性
+
+- **cgroup共有十个子系统**
+  - **blkio 块设备** （磁盘 硬盘 usb） 设备io限制
+  - **cpuacct** cgroup中任务生成cpu资源使用报告
+  - **cupset** 在多cpu系统中 为cgroup中的任务分配独立的cup和内存节点
+  - **devices** 设置任务对物理设备的访问权限
+  - **freezer** 挂起或者恢复cgroup中的任务
+  - **memory** 设定cgroup中任务使用的内存限制 同时生成任务的内存资源使用报告
+  - **net_cls** 使用等级识别符 标记网络数据包 同时使用linux流量控制程序识别从具体cgroup中生成的数据包
+  - **net_prio** 对应用程序设置网络传输优先级 类似于socket 选项中的SO_PRIORITY
+  - **HugeTLB** HugeTLB页的资源控制功能
+
+通过查看 /proc/cgroups 可以查看当前操作系统支持的子系统 
+
+#### 3.linux cgroup
+
+**Cgroup三个组件**
+
+- cgroup是对进程分组管理的一种机制，一个cgroup包含一组进程，并可以在这个cgroup上增加Linux subsystem的各种参数配置，将一组进程和一组subsystem的系统参数关联起来
+- subsystem是一组资源控制的模块 一般包括
+  - blkio 设置对块设备比如硬盘 输入输出的访问控制
+  - cpu设置cgroup中进程的cpu被调度的策略
+  - cpuacct可以统计cgroup中进程的cpu占用
+  - cpuset在多核机器上设置cgroup中进程可以使用的cpu和内存
+  - devices控制cgroup中进程对设备的访问
+  - freezer用于挂起（suspend）和恢复（resume）cgroup中的进程
+  - memory用于控制cgroup中进程的内存占用
+  - net_cls 用于将cgroup中进程产生的网络包分类 以便linux的tc（traffic controller）可以根据分类区分出来自某个cgroup的包饼做限流和监控
+  - ns这个subsystem比较特殊，他的作用是使cgroup中的进程在新的namespace中fork新进程（NEWNS）时，创建出新一个新的cgroup，这个cgroup包含新的namespace中的进程
+- hierarchy的功能是把一组cgroup串成一个树状的结构，一个这样的树便是一个hierarchy，通过这种树状结构，Cgroup可以做到继承。比如，系统对一组定时的任务进程通过cgroup1限制了cpu的使用率，然后其中有一个定时dump日志的进程还需要限制磁盘IO，为了避免限制了磁盘IO之后影响到其他进程，就可以创建cgroup2 使其继承于cgroup1并限制磁盘的io 这样cgroup2便继承了cgroup1中对cpu使用率的限制，并且增加了对磁盘IO的限制为不影响到cgroup1的其他进程
+
+**三个组件之间的关系**
+
+通过上面组件的介绍，Cgroup是凭借三个组件的相互协作实现的 他们三个之间的关系是
+
+- 系统在创建了新的hierarchy之后，系统中所有进程都会加入这个hierarchy的cgroup根节点，这个cgroup根节点是hierarchy默认创建的
+
+- 一个subsystem只能附加到一个hierarchy上
+
+- 一个hierarchy可以附加多个subsystem
+
+- 一个进程可以作为多个cgroup的成员 但是这些cgroup必须在不同的hierarchy中
+
+- 一个进程fork出一个子进程时 子进程是和父进程在同一个cgroup中的 也可以根据需要将其移动到其他的cgroup中
+
+### 11.安装docker
+
+~~~go
+#安装docker过程
+$ sudo yum remove docker \
+                  docker-client \
+                  docker-client-latest \
+                  docker-common \
+                  docker-latest \
+                  docker-latest-logrotate \
+                  docker-logrotate \
+                  docker-engine
+$sudo yum install -y yum-utils \
+  device-mapper-persistent-data \
+  lvm2
+$ sudo yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+$ sudo yum install docker-ce-18.09.1 docker-ce-cli-18.09.1 containerd.io -y
+~~~
 
