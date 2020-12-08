@@ -445,7 +445,7 @@ runc
 ~~~
 
 - docker是cli
-- dockerd是docker engine守护进程 dockerd启动时会启动containerd子进程
+- dockerd是docker engine守护进程    dockerd启动时会启动containerd子进程
 - dockerd与containerd通过rpc通信
 - ctr是containerd的cli
 - containerd通过shim操作runc，runc真正控制容器的生命周期
