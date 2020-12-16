@@ -3,7 +3,6 @@
 ~~~go
 go env -w GOPROXY=https://goproxy.cn,direct
 go env -w GOPROXY=https://gocenter.io,direct
-
 ~~~
 
 
@@ -2808,7 +2807,7 @@ func
 
 
 
-# go的Dockerfile
+## go的Dockerfile
 
 ~~~shell
 #基础版
@@ -2919,7 +2918,7 @@ func handleTCPConn(conn *net.TCPConn) {
 }
 ~~~
 
-# <font color=blue>go原理</font>
+## <font color=blue>go原理</font>
 
 ### <font color=red>面试瞎扯版</font>
 
@@ -2945,3 +2944,14 @@ func handleTCPConn(conn *net.TCPConn) {
 
 **<font color=red size=4>golang调度原理：</font>**https://juejin.im/post/6844903846284787719
 
+## go学习资料
+
+- 鸟窝： https://colobu.com/
+
+- 面向信仰编程：https://draveness.me/golang/
+
+- ###### Go语言高级编程(Advanced Go Programming)：https://chai2010.cn/advanced-go-programming-book/
+
+- 七天学习go项目：https://github.com/geektutu/7days-golang
+
+- go高性能编程：https://geektutu.com/post/high-performance-go.html
