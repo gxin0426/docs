@@ -301,7 +301,7 @@ rules:
 
 - 具体的资源引用可以通过 `resourceNames` 来定义，当指定 `get`、`delete`、`update`、`patch` 四个动词时，可以控制对其目标资源的相应动作；以下为限制一个 subject 对名称为 my-configmap 的 configmap 只能具有 `get` 和 `update` 权限的样例
 
-```
+```yaml
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
@@ -595,7 +595,7 @@ spec:
     services.loadbalancers: "2"
 ```
 
-- limitrange 限制pod的没存和cpu
+- limitrange 限制pod的内存和cpu
 
 ```yaml
 apiVersion: v1

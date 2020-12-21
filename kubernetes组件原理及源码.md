@@ -1,4 +1,43 @@
+
+
+
+
+
+
+
+
 # 0.client-go源码解析
+
+
+
+# 0.kubernetes 源码结构
+
+## 1.代码结构
+
+- pkg目录：主体代码 里面实现了kubernetes的主体逻辑
+- cmd目录：kubernetes所有后台进程的代码 主要是各个子模块的启动代码 具体逻辑在pkg下
+- plugin目录： 主要是kube-schedule和一些插件
+
+### 1.pkg
+
+- api： api主要包括最新版本的Rest api接口的类 并提供数据格式转换工具类 对应版本号文件夹下的文件描述了特定的版本如何序列化存储和网络
+- client： k8s中公用的客户端部分 实现对对象的具体操作crud
+- cloudprovider： k8s提供对aws azure gce mesos 等云提供商提供了接口支持 目前包括负载均衡 实例 zone信息 路由信息等
+- controller：k8s controller主要包括各个controller实现逻辑 为各类资源如 replication endpoint node 等的增删改查等逻辑提供派发和执行
+- credentialprovider： 为docker镜像仓库贡献者提供权威认证
+- generated： generated包是所有生成的文件的目标文件 一般这里面的文件日常是不进行改动的
+- kubectl： 是命令行工具
+- kubelet： 负责node层的pod管理 完成pod及容器的创建 执行pod的删除同步操作
+- master： 负责集群中master节点的运行管理 api安装 各个组件的于小宁端口分配 noderegistry podregistry等创建工作
+- runtime： 实现不同版本api之间的适配 实现不同api版本之间数据结构的转换
+
+### 2. cmd
+
+- 包括k8s所有后台进程的代码 apiserver controller manager proxy kubelet 等进程
+
+### 3. plugin
+
+- 主要包括调度模块的代码实现 用于执行具体的scheduler的调度工作
 
 
 
@@ -110,82 +149,56 @@ API Server提供了k8s各类资源对象的增删改查及watch等http rest接�
   1. 首先，通过node的32018端口访问 会进入到以下链中
 
   ```shell 
+  # iptables -S -t nat
   -A KUBE-NODEPORTS -p tcp -m comment --comment "monitoring/prometheus-server:webui" -m tcp --dport 32018 -j KUBE-MARK-MASQ
   -A KUBE-NODEPORTS -p tcp -m comment --comment "monitoring/prometheus-server:webui" -m tcp --dport 32018 -j KUBE-SVC-B2LATO2XNXKAW5B6
-  ```
-
-  2. 然后转到KUBE-SVC-B2LATO2XNXKAW5B6的链，三个链分别对应三个pod --probability 是概率 
-
+```
+  
+2. 然后转到KUBE-SVC-B2LATO2XNXKAW5B6的链，三个链分别对应三个pod --probability 是概率 
+  
   ```
   -A KUBE-SVC-B2LATO2XNXKAW5B6 -m comment --comment "monitoring/prometheus-server:webui" -m statistic --mode random --probability 0.33332999982 -j KUBE-SEP-6LNVVXXZ6N5KISWB
   -A KUBE-SVC-B2LATO2XNXKAW5B6 -m comment --comment "monitoring/prometheus-server:webui" -m statistic --mode random --probability 0.50000000000 -j KUBE-SEP-7JGOJU5MHN5IX7QC
   -A KUBE-SVC-B2LATO2XNXKAW5B6 -m comment --comment "monitoring/prometheus-server:webui" -j KUBE-SEP-56HYIA4V5KXKNGTU
-  ```
-
-  3. 进入KUBE-SEP-6LNVVXXZ6N5KISWB链中，具体作用是将请求 DNAT到10.253.186.195：9090中
-
+```
+  
+3. 进入KUBE-SEP-6LNVVXXZ6N5KISWB链中，具体作用是将请求 DNAT到10.253.186.195：9090中
+  
   ```
   -A KUBE-SEP-6LNVVXXZ6N5KISWB -s 10.253.186.195/32 -m comment --comment "monitoring/prometheus-server:webui" -j KUBE-MARK-MASQ
   -A KUBE-SEP-6LNVVXXZ6N5KISWB -p tcp -m comment --comment "monitoring/prometheus-server:webui" -m tcp -j DNAT --to-destination 10.253.186.195:9090
-  ```
-
-  4. 其他两个链是同样的道理
-
+```
+  
+4. 其他两个链是同样的道理
+  
   ```
   -A KUBE-SEP-56HYIA4V5KXKNGTU -s 10.253.41.131/32 -m comment --comment "monitoring/prometheus-server:webui" -j KUBE-MARK-MASQ
   -A KUBE-SEP-56HYIA4V5KXKNGTU -p tcp -m comment --comment "monitoring/prometheus-server:webui" -m tcp -j DNAT --to-destination 10.253.41.131:9090
-  ```
-
+```
+  
   ```
   -A KUBE-SEP-7JGOJU5MHN5IX7QC -s 10.253.239.130/32 -m comment --comment "monitoring/prometheus-server:webui" -j KUBE-MARK-MASQ
   -A KUBE-SEP-7JGOJU5MHN5IX7QC -p tcp -m comment --comment "monitoring/prometheus-server:webui" -m tcp -j DNAT --to-destination 10.253.239.130:9090
-  ```
-
-  5.  分析完nodePort的工作方式，接下里说一下clusterIP的访问方式。 对于直接访问cluster IP(10.254.162.44)的3306端口会直接跳转到KUBE-SVC-B2LATO2XNXKAW5B6
-
+```
+  
+5.  分析完nodePort的工作方式，接下里说一下clusterIP的访问方式。 对于直接访问cluster IP(10.254.162.44)的3306端口会直接跳转到KUBE-SVC-B2LATO2XNXKAW5B6
+  
   ```
   -A KUBE-SERVICES ! -s 10.254.0.0/16 -d 10.254.248.39/32 -p tcp -m comment --comment "monitoring/prometheus-server:webui cluster IP" -m tcp --dport 9090 -j KUBE-MARK-MASQ
   -A KUBE-SERVICES -d 10.254.248.39/32 -p tcp -m comment --comment "monitoring/prometheus-server:webui cluster IP" -m tcp --dport 9090 -j KUBE-SVC-B2LATO2XNXKAW5B6
-  ```
-
-  ![](image\kube-proxy-iptables.png)
-
+```
+  
+![](image\kube-proxy-iptables.png)
+  
   - ipvs模式 
     - https://blog.51cto.com/blief/1745134
     - ipvs三种模式
 
-# 6.kubernetes 源码结构
-
-## 1.代码结构
-
-- pkg目录：主体代码 里面实现了kubernetes的主体逻辑
-- cmd目录：kubernetes所有后台进程的代码 主要是各个子模块的启动代码 具体逻辑在pkg下
-- plugin目录： 主要是kube-schedule和一些插件
-
-### 1.pkg
-
-- api： api主要包括最新版本的Rest api接口的类 并提供数据格式转换工具类 对应版本号文件夹下的文件描述了特定的版本如何序列化存储和网络
-- client： k8s中公用的客户端部分 实现对对象的具体操作crud
-- cloudprovider： k8s提供对aws azure gce mesos 等云提供商提供了接口支持 目前包括负载均衡 实例 zone信息 路由信息等
-- controller：k8s controller主要包括各个controller实现逻辑 为各类资源如 replication endpoint node 等的增删改查等逻辑提供派发和执行
-- credentialprovider： 为docker镜像仓库贡献者提供权威认证
-- generated： generated包是所有生成的文件的目标文件 一般这里面的文件日常是不进行改动的
-- kubectl： 是命令行工具
-- kubelet： 负责node层的pod管理 完成pod及容器的创建 执行pod的删除同步操作
-- master： 负责集群中master节点的运行管理 api安装 各个组件的于小宁端口分配 noderegistry podregistry等创建工作
-- runtime： 实现不同版本api之间的适配 实现不同api版本之间数据结构的转换
-
-### 2. cmd
-
-- 包括k8s所有后台进程的代码 apiserver controller manager proxy kubelet 等进程
-
-### 3. plugin
-
-- 主要包括调度模块的代码实现 用于执行具体的scheduler的调度工作
 
 
+# 6.Calico组件原理
 
-# 7.Calico组件原理
+参考文章：https://blog.csdn.net/u010771890/article/details/103224004
 
 - 名词解释
 
@@ -238,7 +251,7 @@ curl https://docs.projectcalico.org/v3.9/manifests/calico.yaml -O
 
 
 
-# 8.BGP协议
+# 7.BGP协议
 
 - 概念
 
@@ -249,11 +262,11 @@ curl https://docs.projectcalico.org/v3.9/manifests/calico.yaml -O
 
 ·
 
-#9.关于iptables和calico一些笔记
+#8.关于iptables和calico一些笔记
 
 1. 在每个node节点上calico会创建一个tunl0的网桥 （网段）（目前使用calico主要还是以ipip方式）这个节点的所有pod都会被分配这个网段的ip
 
-
+# 9.BPF
 
 
 
