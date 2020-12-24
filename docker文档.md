@@ -691,3 +691,6 @@ $ sudo yum-config-manager \
 $ sudo yum install docker-ce-18.09.1 docker-ce-cli-18.09.1 containerd.io -y
 ~~~
 
+### 12.关于kubernetes与docker关系的一篇文章
+
+- https://zhuanlan.zhihu.com/p/83609745
