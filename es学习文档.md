@@ -35,5 +35,9 @@
 
 ## 3.es-operator
 
+##4.filebeat配置相关
+###1.关于filebeat配置的文章
+`http://www.ttlsa.com/elk/elk-beats-common-configure-section-describe/`
+`https://segmentfault.com/a/1190000020153303`
 
 
