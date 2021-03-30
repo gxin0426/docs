@@ -859,3 +859,39 @@ tar -xvf test.tar
 
 ```https://blog.csdn.net/Dream_xun/article/details/106986677```
 
+### 34.软连接
+
+```
+由于目录有存储空间限制，当存储空间不足时，可以使用软链接缓解空间不足的问题：将文件内容移动到较大空间的目录内，使用ln命令建立实际存储路径与虚拟访问路径的软链接（需要root用户登录）：
+
+移动文件夹至实际存储路径,前一个为原路径，后一个为目的路径：
+
+ mv /usr/share/nginx/html/nextcloud/data /data4/nextcloud/
+
+建立软链接，前一个为实际存储路径，后一个为虚拟访问路径，两者权限相同：
+
+ln -s /data4/nextcloud/data /usr/share/nginx/html/nextcloud/data
+```
+
+### 35.查看网卡是否为万兆卡
+
+`lspci -vvv | grep Ethernet`
+
+### Thread died in Berkeley DB library
+
+#### 问题解决
+
+　　01、删除yum临时库文件
+
+　　　　rm -fr /var/lib/rpm/__db.*
+
+　　02、重建rpm数据库
+
+　　　　rpm --rebuilddb
+
+　　03、清理缓存及生产yumdb缓存
+
+　　　　yum clean all
+
+　　　　yum makecache
+

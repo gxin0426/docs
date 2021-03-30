@@ -1,4 +1,4 @@
-### 1.prometheus pvc 挂载ceph或者nfs
+## 1.prometheus pvc 挂载ceph或者nfs
 
 ```yaml
 volumeClaimTemplates:
@@ -13,7 +13,7 @@ volumeClaimTemplates:
       storageClassName: nfs-elk
 ```
 
-### 2. es介绍
+## 2. es介绍
 
 - Elastic 本质上是一个分布式数据库，允许多台服务器协同工作，每台服务器可以运行多个 Elastic 实例。
 
@@ -73,7 +73,7 @@ https://segmentfault.com/a/1190000011661882
 
 ```
 
-### 3.elk收集pod日志 以及docker打印日志的几种方式
+## 3.elk收集pod日志 以及docker打印日志的几种方式
 
 - docker日志可以分成两类：1.stdout标准输出 2.是文件日志
 
@@ -84,3 +84,69 @@ stdout是写在标准输出里面的日志，比如你在程序里面，通过pr
 ![](dockerimage\docker日志打印方式.png)
 
 ![](dockerimage\docker的logdriver.png)
+
+
+
+## 4.filebeat影响内存的两个参数
+
+    queue.mem.events消息队列的大小，默认值是4096，这个参数在6.0以前的版本是spool-size，通过命令行，在启动时进行配置
+    max_message_bytes 单条消息的大小, 默认值是10M
+
+filebeat最大的可能占用的内存是max_message_bytes * queue.mem.events = 40G，考虑到这个queue是用于存储encode过的数据，raw数据也是要存储的，所以，在没有对内存进行限制的情况下，最大的内存占用情况是可以达到超过80G。
+
+
+
+
+
+
+
+
+
+## 1.常用命令
+
+1. **获取每个节点的可用磁盘空间:**   ```curl -XGET localhost:9200/_cat/allocation?v```
+
+2. **删除某一个索引：** ```DELETE [索引名]```
+
+3. **删除数据（保留索引）**
+
+   ~~~shell
+   POST 索引名称/文档名称/_delete_by_query   
+   {
+     "query":{
+       "term":{
+         "_id":100000100
+       }
+     }
+   }
+   ~~~
+
+4. **删除所有数据**
+
+   ~~~shell
+   POST /testindex/testtype/_delete_by_query?pretty
+   {
+       "query": {
+           "match_all": {
+           }
+       }
+   }
+   ~~~
+
+   
+
+## 2.原理组成
+
+## 3.es-operator
+
+### 4.filebeat配置相关
+
+#### 1.关于filebeat配置的文章
+
+`http://www.ttlsa.com/elk/elk-beats-common-configure-section-describe/`
+`https://segmentfault.com/a/1190000020153303`
+
+#### 2.grafana链接es使用变量
+
+https://my.oschina.net/CainGao/blog/4425041
+

@@ -244,3 +244,20 @@ fix:创建data-dir ：/var/lib/etcd
 #2.health check for peer 323e5ea4891348e5 could not connect: dial tcp 192.168.1.157:2380: getsockopt: connection refused
 ~~~
 
+### 可视化界面
+
+```
+docker run --rm  -d --name etcd-browser \
+-p 8000:8000 \
+--env ETCD_HOST=10.211.55.25 \
+--env ETCD_PORT=2379 \
+buddho/etcd-browser
+```
+
+```
+#输入地址即可
+docker run -it -d --name etcdkeeper \
+-p 8080:8080 \
+deltaprojects/etcdkeeper
+```
+
