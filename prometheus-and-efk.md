@@ -150,3 +150,10 @@ filebeat最大的可能占用的内存是max_message_bytes * queue.mem.events = 
 
 https://my.oschina.net/CainGao/blog/4425041
 
+#### 3.grafana接入es全面讲解文章
+
+http://www.51niux.com/?id=242
+
+#### 4.filebeat命令参数
+
+https://my.oschina.net/ch66880/blog/1619087

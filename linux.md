@@ -877,7 +877,7 @@ ln -s /data4/nextcloud/data /usr/share/nginx/html/nextcloud/data
 
 `lspci -vvv | grep Ethernet`
 
-### Thread died in Berkeley DB library
+### 36.Thread died in Berkeley DB library
 
 #### 问题解决
 
@@ -894,4 +894,140 @@ ln -s /data4/nextcloud/data /usr/share/nginx/html/nextcloud/data
 　　　　yum clean all
 
 　　　　yum makecache
+
+### 37. linux中的中断信号
+
+信号（signal）是linux，类unix和其他posix兼容的操作系统中用来进程间通信的一种方式。一个信号就是一个异步的通知，发送给某个进程，或者同进程的某个线程，告诉它们某个事件发生了
+
+当信号发送到某个进程中时，操作系统会中断该进程的正常流程，并进入相应的信号处理函数执行操作，完成后再刚回到中断的地方继续执行。
+
+| 信号    | 值       | 动作 | 说明                                                         |
+| :------ | :------- | :--- | :----------------------------------------------------------- |
+| SIGHUP  | 1        | Term | 终端控制进程结束(终端连接断开)                               |
+| SIGINT  | 2        | Term | 用户发送INTR字符(Ctrl+C)触发                                 |
+| SIGQUIT | 3        | Core | 用户发送QUIT字符(Ctrl+/)触发                                 |
+| SIGILL  | 4        | Core | 非法指令(程序错误、试图执行数据段、栈溢出等)                 |
+| SIGABRT | 6        | Core | 调用abort函数触发                                            |
+| SIGFPE  | 8        | Core | 算术运行错误(浮点运算错误、除数为零等)                       |
+| SIGKILL | 9        | Term | 无条件结束程序(不能被捕获、阻塞或忽略)                       |
+| SIGSEGV | 11       | Core | 无效内存引用(试图访问不属于自己的内存空间、对只读内存空间进行写操作) |
+| SIGPIPE | 13       | Term | 消息管道损坏(FIFO/Socket通信时，管道未打开而进行写操作)      |
+| SIGALRM | 14       | Term | 时钟定时信号                                                 |
+| SIGTERM | 15       | Term | 结束程序(可以被捕获、阻塞或忽略)                             |
+| SIGUSR1 | 30,10,16 | Term | 用户保留                                                     |
+| SIGUSR2 | 31,12,17 | Term | 用户保留                                                     |
+| SIGCHLD | 20,17,18 | Ign  | 子进程结束(由父进程接收)                                     |
+| SIGCONT | 19,18,25 | Cont | 继续执行已经停止的进程(不能被阻塞)                           |
+| SIGSTOP | 17,19,23 | Stop | 停止进程(不能被捕获、阻塞或忽略)                             |
+| SIGTSTP | 18,20,24 | Stop | 停止进程(可以被捕获、阻塞或忽略)                             |
+| SIGTTIN | 21,21,26 | Stop | 后台程序从终端中读取数据时触发                               |
+| SIGTTOU | 22,22,27 | Stop | 后台程序向终端中写数据时触发                                 |
+
+### 38.core文件
+
+在程序不寻常退出时，内核会在当前工作目录下生成一个core文件（是一个内存映像，同时加上调试信息）。使用gdb来查看core文件，可以指示出导致程序出错的代码所在文件和行数。
+
+通过ulimit -c可以查看core文件的大小。0位关闭  
+
+### 39.mlocate文件过大问题
+
+**locate**命令用来查找文件和目录。locate命令要比find -name快得多，原因在于它不搜索具体目录，而是搜索一个数据库/var/lib/mlocate/mlocate.db。这个数据库包含本地所有文件信息。系统自动创建这个数据库，并且每天更新一次。使用updatedb命令，手动更新数据库。
+
+mlocate.db文件过大解决办法
+
+1.修改/etc/updatedb.conf  在	PRUNEPATHS参数后面增加不需要进行locate的目录。修改后执行
+
+`sudo pkill updatedb.mlocate`
+
+`updatedb`
+
+### 40.netstat与lsof
+
+#### netstat
+
+（https://blog.csdn.net/LiuXingSiYe/article/details/86539480）
+
+常用参数：
+
+-a： 显示所有链接
+
+-n：直接使用IP地址，而不通过域名服务器
+
+-o： 显示计时器
+
+-p：显示正在使用socket的程序识别码和程序名称
+
+-l：显示监控中的服务器的socket
+
+常用技巧：
+
+- 查找请求最多的前20个ip（常用于查找攻击开源）
+
+`netstat -anlp|grep 80|grep tcp|awk '{print $5}'|awk -F: '{print $1}'|sort|uniq -c|sort -nr|head -n20`
+
+`netstat -ant |awk '/:80/{split($5,ip,":");++A[ip[1]]}END{for(i in A) print A[i],i}' |sort -rn|head -n20`
+
+
+
+#### lsof
+
+lsof -i:[端口号]
+
+
+
+lsof -i:8080：查看8080端口占用
+lsof abc.txt：显示开启文件abc.txt的进程
+lsof -c abc：显示abc进程现在打开的文件
+lsof -c -p 1234：列出进程号为1234的进程所打开的文件
+lsof -g gid：显示归属gid的进程情况
+lsof +d /usr/local/：显示目录下被进程开启的文件
+lsof +D /usr/local/：同上，但是会搜索目录下的目录，时间较长
+lsof -d 4：显示使用fd为4的进程
+lsof -i -U：显示所有打开的端口和UNIX domain文件
+
+### 41.iptables
+
+#### 增加白名单
+
+配置22端口的白名单 -s 指定源
+
+`iptables -A INPUT -s 192.168.1.0/24 -p tcp --dport 22 -j ACCEPT `
+
+这个放到最后提条（-A参数表示放到队首，-I表示放到最后。iptables由上往下匹配，一旦符合，后面都不匹配）
+
+`iptables -A INPUT -p tcp --dport 22 -j DROP`
+
+```
+iptables -L INPUT -n --line-number #列出所有INPUT规则
+iptables -D INPUT 4 # 删除第四条规则
+```
+
+- 查询：iptables [-t table] [-L] [-nv]
+
+-t ：nat filter mangle
+
+-L：PROROUTING INPUT FORWARD OUTPUT POSTROUTING
+
+-n：直接显示ip，速度回快些
+
+-v：列出更多信息，包括通过该规则的数据包总位数、相关的网络接口
+
+- 清除：iptables [-t tables] [-FXZ]
+
+-F: 清除所有已经制定的规则
+
+-X：删除所有使用者自定义的chain
+
+-Z：将所有的chain的计数与流量统计都清零
+
+
+
+### sed命令
+
+``` 
+sed -e '/abc/d' a.log #删除a.log中包含‘abc’的行，但不改变a.log本身，操作之后的结果显示在终端
+sed -e ‘/abc/d’ a.log > a.log.bak #删除a.logzhong包含 ‘abc’的行，将结果保存到a.log.bak
+sed '/abc/d;/efg/d' a.log > a.log.bak #删除含字符串 ‘abc’或‘efg’的行
+sed -i 's/test/mytest/g' example #把test替换成mytest -i 是直接修改并保存
+```
 

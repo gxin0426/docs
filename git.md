@@ -83,6 +83,12 @@ git rev-list -n 1 HEAD --<file_path>#得到deleting_commit
 git checkout <delete_commit>^ -- <file_path> #回到删除文件 deleting_commit 之前的状态
 
 
+#本地与远程的差集
+git log local_branch..origin/remote_branch
+
+#统计文件的改动
+git diff --stat local_branch origin/remote_branch
+
 
 
 
