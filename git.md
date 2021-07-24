@@ -89,8 +89,9 @@ git log local_branch..origin/remote_branch
 #统计文件的改动
 git diff --stat local_branch origin/remote_branch
 
+#git 回滚到之前的某一个commit
 
-
-
+1. git log 查看要回滚的一个commit
+2.git reset --hard <commit hash id>
 ```
 

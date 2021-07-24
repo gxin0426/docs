@@ -2734,7 +2734,7 @@ $ kubectl logs --tail 200 -f podname -n jenkins
 $ cat /var/log/messages
 ~~~
 
-### 27.安装minikube
+### 27.安装minikube(vm & mac)
 
 ~~~shell
 minikube start --vm-driver=none
@@ -2748,6 +2748,14 @@ minikube start --image-mirror-country cn \
 #troubleshooting：Kubernetes v1.18.0 requires conntrack to be installed in root's path
 #解决： yum install -y conntrack
 
+############################################################################
+#mac安装minikube
+#安装docker vmware
+brew install docker-machine-driver-vmware
+#安装minikube
+minikube start --driver=vmware --kubernetes-version=v1.14.10
+#设置vmware为默认driver
+minikube config set driver vmware
 
 ~~~
 

@@ -4,8 +4,6 @@ chown -R gaoxin:gaoxin /opt
 
 chmod 777 /opt
 
-
-
 **chgrp 用户名  文件名 -R**
 
 **chown 用户名  文件名 -R**
@@ -24,9 +22,6 @@ wget -O /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
 #运行以下命令生成缓存
 yum clean all
 yum makecache
-
-
-
 ~~~
 
 ### 1.rpm
@@ -321,7 +316,8 @@ rm -rf /var/logs/mysql
 ### 14.df du free
 
 ~~~shell
-du -h: 显示每个文件和目录的磁盘使用空间~~~文件的大小
+du -h: 显示每个文件和目录的磁盘使用空间~~~文件的大小 
+du -h --max-depth 1
 df -h：显示磁盘分区上可以使用的磁盘空间 #-a    #查看全部文件系统，单位默认KB   -h  使用-h选项以KB、MB、GB的单位来显示，可读性高~~~（最常用）
 df -T：查看磁盘格式
 free -h：可以显示Linux系统中空闲的、已用的物理内存及swap内存,及被内核使用的buffer
@@ -639,17 +635,131 @@ $ mount /dev/sdb1 /dataall
 
 #常用小命令
 $ df -lhT # 查看文件系统格式 mount 也可以 或者 file -s /dev/sda1
+
+
+
+#使用parted分区
+# 使用 lsblk,fdisk,df 等命令查看当前分区信息 
+lsblk
+fdisk -l
+df -TH
+
+# 使用 /dev/sdb1 为例
+parted /dev/sdb1
+parted (GNU parted) 3.1
+Welcome to GNU Parted! Type 'help' to view a list of commands.
+
+# 使用 help 查看帮助
+(parted) help
+  check NUMBER                             do a simple check on the file system
+  cp [FROM-DEVICE] FROM-NUMBER TO-NUMBER   copy file system to another partition
+  help [COMMAND]                           prints general help, or help on COMMAND
+  mklabel,mktable LABEL-TYPE               create a new disklabel (partition table)
+  mkfs NUMBER FS-TYPE                      make a FS-TYPE file system on partititon NUMBER
+  mkpart PART-TYPE [FS-TYPE] START END     make a partition
+  mkpartfs PART-TYPE FS-TYPE START END     make a partition with a file system
+  move NUMBER START END                    move partition NUMBER
+  name NUMBER NAME                         name partition NUMBER as NAME
+  print [free|NUMBER|all]                  display the partition table, a partition, or all devices
+  quit                                     exit program
+  rescue START END                         rescue a lost partition near START and END
+  resize NUMBER START END                  resize partition NUMBER and its file system
+  rm NUMBER                                delete partition NUMBER
+  select DEVICE                            choose the device to edit
+  set NUMBER FLAG STATE                    change the FLAG on partition NUMBER
+  toggle [NUMBER [FLAG]]                   toggle the state of FLAG on partition NUMBER
+  unit UNIT                                set the default unit to UNIT
+  version                                  displays the current version of GNU Parted and copyright information
+
+# 建立磁盘标签
+(parted) mklabel GPT
+# 如果没有任何分区，它查看磁盘可用空间，当分区后，它会打印出分区情况
+(parted) print
+# 创建主分区，n 为要分的分区占整个磁盘的百分比
+(parted) mkpart primary 0% 100%
+#  分区完后，直接 quit 即可，不像 fdisk 分区的时候，还需要保存一下，这个不用
+(parted) quit
+
+# 让内核知道添加新分区
+partprobe
+
+# 格式化
+mkfs.ext4 /dev/sdb1
+
+# 挂载分区
+mkdir /data
+mount /dev/sdb1 /data
+
+# 设置开机自动挂载磁盘
+vim /etc/fstab
+/dev/sdb1    /data    ext4    defaults    0    0
+
+# fdisk 命令无法使用可以用 parted
+fdisk -l
+parted -l
+
+# parted 有 2 种模式，使用命令行模式方便自动化
+ 命令行模式: parted [option] device [command]
+交互模式: parted [option] device
 ~~~
 
-### 23.kill命令
+### 23.kill命令与信号处理
+
+#### 1.kill命令
 
 ~~~shell
-$ kill -l pid
 # -l选项告诉kill命令启动进程的用户已注销的方式结束进程 当使用该选项时 kill命令也试图杀死所留下的子进程 但这个命令也不是总能成功 
-$ kill -9 pid
+$ kill -l pid
+
 # 强大又危险 这个命令迫使进程在运行时突然停止 进程在结束后不能自我清理 危害是导致系统资源无法正常释放 一般不推荐使用
 # 当使用该命令时，一定要通过ps -ef确认没有剩余任何僵尸进程 只能通过终止父进程来消除僵尸进程 如果僵尸进程被init收养 问题就比较严重了 杀死init进程意味着关闭系统 如果系统中有僵尸进程 并且父进程是init 僵尸进程占用了大量的系统资源 那么就需要在某个时候重启机器清除进程表了
+$ kill -9 pid
 ~~~
+
+#### 2.Linux Signal
+
+##### 1.发送信号
+
+- Ctrl-C发送INT signal（SIGINT),通常导致进程结束
+- Ctrl-Z发送TSTP signal（SIGSTP),通常导致进程挂起（suspend）
+- Ctrl-\发送QUIT signal(SIGQUIT),通常导致进程结束和dump core
+- Ctrl-T(不是所有的unix都支持)发送INFO signal(SIGINFO),导致操作系统显示此运行命令的信息
+
+`kill -9 pid`发送SIGKILL信号给进程
+
+##### 2.处理信号
+
+Signal handler可以通过`signal()`系统调用进行设置。如果没有设置，缺省的handler会被调用，当然进程也可以忽略此信号。
+
+有两种信号不能被拦截和处理：`SIGKILL`和`SIGSTOP`
+
+当接受到信号时，进程会根据信号的响应动作执行相应的操作，信号的响应动作有以下几种：
+
+- 中止进程(Term)
+- 忽略信号(lgn)
+- 中止进程并保存内存信息(Core)
+- 停止进程(Stop)
+- 继续运行进程(Cont)
+
+用户可以通过`signal`或`sigaction`函数修改信号的响应动作（也就是常说的“注册信号”）。另外，在多线程中，各线程的信号响应动作都是相同的，不能对某一个线程设置独立的响应动作。
+
+##### 3.信号类型
+
+常用的信号
+
+|  信号   |    值    | 动作 |                   说明                   |
+| :-----: | :------: | :--: | :--------------------------------------: |
+| SIGHUP  |    1     | Term |     终端控制进程结束（终端连接断开）     |
+| SIGINT  |    2     | Term |      用户发送INTR字符（Ctrl+C）触发      |
+| SIGQUIT |    3     | Core |      用户发送QUIT字符（Ctrl+/）触发      |
+| SIGILL  |    4     | Core |                 非法指令                 |
+| SIGABRT |    6     | Core |            调用abort函数触发             |
+| SIGKILL |    9     | Term | 无条件结束进程（不能被捕获、阻塞或忽略） |
+| SIGTERM |    15    | Term |    结束进程（可以被捕获、阻塞、忽略）    |
+| SIGSTOP | 17,19,23 | Stop |    停止进程（不能被捕获、阻塞、忽略）    |
+| SIGSTP  | 18,20,24 | Stop |     停止进程（可以捕获、阻塞、忽略）     |
+
+参考文章：https://colobu.com/2015/10/09/Linux-Signals/
 
 ### 24. 文件描述符
 
@@ -1022,7 +1132,7 @@ iptables -D INPUT 4 # 删除第四条规则
 
 
 
-### sed命令
+### 42.sed命令
 
 ``` 
 sed -e '/abc/d' a.log #删除a.log中包含‘abc’的行，但不改变a.log本身，操作之后的结果显示在终端
@@ -1030,4 +1140,47 @@ sed -e ‘/abc/d’ a.log > a.log.bak #删除a.logzhong包含 ‘abc’的行，
 sed '/abc/d;/efg/d' a.log > a.log.bak #删除含字符串 ‘abc’或‘efg’的行
 sed -i 's/test/mytest/g' example #把test替换成mytest -i 是直接修改并保存
 ```
+
+### 43.查看磁盘io
+
+#### top命令
+
+```
+Tasks: 103 total,   2 running, 101 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  0.3 us,  0.3 sy,  0.0 ni, 99.0 id,  0.0 wa,  0.3 hi,  0.0 si,  0.0 st
+```
+
+Tasks: 
+
+103 total 进程总数
+
+2 running 正在运行的进程数
+
+101 sleeping 睡眠的进程数
+
+0 stopped 停止的进程数
+
+0 zombie 僵尸进程数
+
+%Cpu(s):
+
+0.3 us 用户空间占用cpu百分比
+
+0.3 sy 内核空间占用cpu百分比
+
+0.0 ni 用户进程空间内改变过优先级的进程占用cpu百分比
+
+99.0 id 空闲cpu百分比
+
+0.0 wa 等待输入输出的cpu时间百分比
+
+0.3 hi 
+
+#### iostat
+
+iostat -dx
+
+#### 清理 /var/log/journal
+
+`journalctl --vacuum-size=10M`
 
