@@ -2848,3 +2848,33 @@ kubectl config use-context kubernetes --kubeconfig=gx.kubeconfig
 kubectl create clusterrolebinding gx-cluster --clusterrole=cluster-admin --user=gx
 ~~~
 
+### 34.configmap挂载方法
+
+#### 1. 使用文件创建configmap
+
+```shell
+ #文件名字为config
+ kubectl create configmap config  --from-file=config -n 9n-das
+```
+
+#### 2. 挂载到容器中
+
+```yaml
+volumeMounts:
+- mountPath: /root/.kube
+  name: config
+    
+volumes:
+- name: config
+  configMap:
+    defaultMode: 420
+    name: config
+    
+#在容器里查看
+ls /root/.kube/config
+```
+
+参考文章：https://www.jianshu.com/p/9d55b4a4eeab
+
+
+

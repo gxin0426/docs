@@ -1184,3 +1184,50 @@ iostat -dx
 
 `journalctl --vacuum-size=10M`
 
+
+
+### 44. centos查看用户和用户组
+
+- 查看用户列表：`cat /etc/passwd`
+- 查看用户组列表 `cat /etc/group`
+- 查看系统中有哪些用户 `cut -d : -f 1 /etc/passwd`
+
+- 查看可以登陆系统的用户 `cat /etc/passwd | grep -v /sbin/nologin |cut -d : -f 1`
+- 查看用户操作权限： `w`
+- 查看某一个用户 `w <user>`
+
+### 45. 创建用户指定家目录
+
+linux创建新用户，当前用户必须为root用户
+
+```python
+useradd -d /export/gaoxin -m gaoxin
+```
+
+### 46. iperf 用法
+
+#### 1. 查看当前节点的网速
+
+`iptraf -g`
+
+#### 2. iperf3
+
+常用参数：
+
+-s –server 服务器模式
+
+-c –client 客户端模式
+
+-i  指定每次报告之间的时间间隔
+
+-p 端口
+
+-u –udp 表示采用UDP协议发送报文
+
+-l  设置读写缓冲区的长度
+
+-b –bandwidth 指定UDP模式使用的带宽
+
+-t 	指定数据传输的总时间
+
+-F   指定文件作为数据流进行带宽测试

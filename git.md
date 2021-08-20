@@ -95,3 +95,5 @@ git diff --stat local_branch origin/remote_branch
 2.git reset --hard <commit hash id>
 ```
 
+分支管理：`https://www.cnblogs.com/jiaoshou/p/11808361.html`
+

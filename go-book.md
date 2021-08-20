@@ -2955,3 +2955,29 @@ func handleTCPConn(conn *net.TCPConn) {
 - 七天学习go项目：https://github.com/geektutu/7days-golang
 
 - go高性能编程：https://geektutu.com/post/high-performance-go.html
+
+## golang生成随机数
+
+```golang
+func init() {
+  rand.Seed(time.Now().UnixNano())
+}
+
+func GetRandomString(n int) string {
+  str := "AABCDEFGHIGKLMNOPQabcdefghigklmnopqrstuvwxyz"
+  bytes := []byte(str)
+  var result []byte
+  for i := 0; i < n; i++ {
+    result = append(result, bytes[rand.Intn(len(bytes))])
+  }
+  return string(result)
+}
+
+//方法2
+func GetRandomString(n int) string {
+  randBytes := make([]byte, n/2)
+  rand.Read(randBytes)
+  return fmt.Sprintf("%x", randBytes)
+}
+```
+
