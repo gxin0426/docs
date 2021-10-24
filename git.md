@@ -97,3 +97,19 @@ git diff --stat local_branch origin/remote_branch
 
 分支管理：`https://www.cnblogs.com/jiaoshou/p/11808361.html`
 
+### 在dev分支获取master上最新的代码
+
+```bash
+#简单方法
+git pull origin master
+
+#第二种方法
+git checkout master #切换到主分支
+git pull
+git checkout dev
+git pull
+git merge master #合并主分支最新代码到dev分支
+解决冲突
+git push # 推送本地dev分支到远程dev分之
+```
+

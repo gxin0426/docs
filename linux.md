@@ -15,9 +15,6 @@ chmod 777 /opt
 curl -o /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
 curl -o /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
 
-下载repo 到 /etc/yum.repos.d/
-epel(RHEL7)
-wget -O /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
 
 #运行以下命令生成缓存
 yum clean all
@@ -591,7 +588,7 @@ ip route change 0/0 via 192.168.1.2 dev eth0
 
 
 
-### 22.给虚拟机添加新磁盘
+### 22.制作文件系统
 
 ~~~shell
 #添加过程不做描述
@@ -1231,3 +1228,76 @@ useradd -d /export/gaoxin -m gaoxin
 -t 	指定数据传输的总时间
 
 -F   指定文件作为数据流进行带宽测试
+
+### 47. bond策略
+
+- bond0 : round-robin : 轮询
+- bond1 : active-backup: 主备
+- bond2: XOR: hash负载均衡
+- bond3: broadcast: 广播策略，向所有的接口发送数据包，本模式提供容错能力 
+- bond4: 802.3ad: 动态链路聚合
+- bond5: balance-tlb: 自适应传输负载均衡，根据每个slave的负载决定从哪个接口发送数据包，从哪个接口接受数据包。如果接收的slave接口故障，其他slave接口将接管它的mac地址继续接收。
+- bond6: balance-alb: 自适应负载均衡
+
+注意： mode1 5 6 不需要交换机配置 mode0 2 3 4 需要交换机配置
+
+### ping不通几种情况
+
+#### 常见原因：
+
+- ip错误
+- 网段不同 通过路由无法找到
+- 防火墙设置
+- 路由设置问题
+
+排查方法：
+
+- ping -a 可探测对方
+- ping 127.0.0.1 
+  - 若提示： no route to host 则说明网卡不能正常工作
+  - 若提示：transmit failed error code 则说明网卡驱动有问题
+  - 若提示：timeout 说明路由器中有该路由，但是由于其他原因导致包无法送达
+  - 若提示： destination host unreachable 说明路由器中无该路由
+
+- 查看主机的路由规则 route -n 看看是否有问题
+
+#### 操作方法（删除路由）
+
+```shell
+$ route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         192.168.178.1   0.0.0.0         UG    0      0        0 eth0
+0.0.0.0         160.98.123.1    0.0.0.0         UG    600    0        0 wlan0
+
+$ sudo route del -n 0.0.0.0 gw 192.168.178.1 netmask 0.0.0.0 dev eth0
+```
+
+#### 删除网桥
+
+```shell
+# 删除网卡
+$ tunctl -d <vir interface>
+# 删除虚拟网桥
+$ ifconfig brige down
+$ brctl delbr brige
+# 将网卡 移出 bridge
+$ brctl delif br0 veth
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
