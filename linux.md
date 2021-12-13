@@ -795,6 +795,25 @@ $ vi /etc/security/limits.conf
 
 参考文章： https://www.jianshu.com/p/20f1e96557e3
 
+#### 打开文件表
+
+内核会维护系统内所有打开的文件及其相关的元信息，该结构称为打开文件表
+
+表中每个条目包括：
+
+- 文件的偏移量。posixAPI中的read write lseek函数都会修改该值
+- 打开文件时的状态和权限标记。通过open函数的参数传入
+- 文件的访问模式（读写执行）。通过open函数的参数传入
+- 指向其对应的inode对象的指针。内核会维护系统级别的inode表
+
+文件描述符表、打开文件表、inode表之间的关系可以用书中的下图来表示
+
+![](/Users/gaoxin123/Desktop/docs/image/file-describers.jpg)
+
+### epoll机制
+
+https://segmentfault.com/a/1190000003063859
+
 ### 25.linux的inotify机制
 
 自内核2.6.13起，linux提供inotify机制，以允许应用程序监控文件事件
@@ -1287,13 +1306,61 @@ $ brctl delif br0 veth
 
 
 
+### nohup用法以及&含义
 
+`nohup ./my_script > my_script.log 2>&1 &`
 
+在命令最后加上&符号，表示让这个进程到后台去执行，这样立刻返回到提示符状态，我们可以接着做下面的事。如：command &。
+ 		这种“后台”进程在shell一直打开的情况下是没有问题的，如果我们关了shell窗口甚至退出ssh登录或vnc登录，那么进程自动就结束了。所以如果想退出窗口乃至退出登录仍然保持程序运行，再加上nohup。
 
+### 升级centos内核
 
+#### 内核含义
 
+版本性质：ml(mainline)主分支，stable稳定版，lt(longterm)长期维护版
 
+查看当前内核版本：`uname -r`
 
+#### 升级内核
+
+1. 升级内核需先倒入elrepo的key，然后安装elrepo的yum源：
+
+```sh
+rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
+yum install -y https://www.elrepo.org/elrepo-release-7.0-4.el7.elrepo.noarch.rpm
+```
+
+2. 安装ml内核
+
+```sh
+yum --enablerepo=elrepo-kernel -y install kernel-ml-devel kernel-ml
+#安装lt
+yum --enablerepo=elrepo-kernel -y install kernel-lt-devel kernel-lt
+```
+
+3. 设置为默认内核
+
+```sh
+grub2-set-default 0
+gurb2-mkconfig -o /boot/grub2/grub.cfg
+```
+
+4. 删除旧的内核
+
+```sh
+rpm -qa | grep kernel
+yum remove 旧内核名字
+```
+
+5. 安装新的工具包
+
+```
+yum remove kernel-tools-libs kernel-tools -y
+#install new version
+yum --disablerepo=* --enablerepo=elrepo-kernel install kernel-ml-tools
+```
+
+6. `reboot`
 
 
 

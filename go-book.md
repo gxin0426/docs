@@ -2934,7 +2934,7 @@ func handleTCPConn(conn *net.TCPConn) {
 
 **M**（machine）： 代表一个内核线程，这个线程是操作系统来处理的，操作系统负责把他放到一个core上执行
 
-**P**（processor）：代表一个逻辑处理器，也就是执行代码的上下文环境
+##### **P**（processor）：代表一个逻辑处理器，也就是执行代码的上下文环境
 
 **G**（goroutine）： 代表一个并发的代码片段
 
@@ -3002,5 +3002,177 @@ read GIT_TOKEN
 echo '开始配置git config --global 使用access-token 验证私有仓库身份认证'
 git config --global url."https://$GIT_USER:$GIT_TOKEN@$GOPRIVATE".insteadOf "https://$GOPRIVATE"
 echo '现在你可以使用 go mod download (go run main.go) 继续开发你的项目吧'
+```
+
+## golang中context用法
+
+### context的作用
+
+context包提供了上下文机制在goroutine之间传递deadline，取消信号（cancellation signals）或其他请求相关的信息。使用方法有：
+
+1. 服务器程序为每一个请求创建一个context实例（称为根context，通过cotnext.backgroud创建）
+2. 之后的goroutine接收根context的一个派生context对象。比如通过根context的withcancel方法，创建子context
+3. goroutine通过context.Done()方法监听取消信号（通常和select一起使用）Done方法是一个通信操作，会阻塞goroutine，直到收到取消信号接触阻塞。
+4. 当一个context被取消，比如执行了cancelFunc，那么该context 派生的context也会被取消。
+
+```golang
+//这种情况print1和print2之间没有联系，print1取消后 print2继续执行
+func main() {
+	go print1()
+	go print2()
+	for  {
+		time.Sleep(2 * time.Second)
+		fmt.Println("contine ...!!!")
+	}
+}
+
+func print1(){
+	i := 0
+	for {
+		time.Sleep(2 * time.Second)
+		fmt.Println("this is print1 print num : ", i)
+		i++
+		if i == 5 {
+			fmt.Println("cancel print1 now")
+			break
+		}
+	}
+}
+
+func print2(){
+	i := 0
+	for{
+		time.Sleep(2 * time.Second)
+		fmt.Println("this is print2 : ", i)
+		i++
+	}
+}
+
+```
+
+```golang
+//print1中当i=5 ch <- 1 获取值 执行cancelP print2中的ctx.Done获取值，print2 执行完毕
+func main(){
+	ctxP, cancelP := context.WithCancel(context.Background())
+	ctxC, _ := context.WithCancel(ctxP)
+	ch := make(chan int)
+	go print1(ch)
+	go print2(ctxC)
+
+	select {
+	case <- ch:
+		fmt.Println("ch received##")
+	} 
+	cancelP()
+	for {
+		time.Sleep(2 * time.Second)
+		fmt.Println("continue!!!!!!!")
+	}
+}
+
+func print1(ch chan int){
+	i := 0
+	for {
+		time.Sleep(2 * time.Second)
+		fmt.Println("print1 now print1: ", i)
+		i++
+		if i == 5 {
+			fmt.Println("cancel print1 now!!")
+			ch <- 1
+			break
+		}
+	}
+}
+
+func print2(ctx context.Context){
+	i := 0
+	for {
+		time.Sleep(2 * time.Second)
+		fmt.Println("print print2 now @@ : ", i)
+		i++
+		select {
+		case <-ctx.Done():
+			fmt.Println("cancel : ", ctx.Err())
+			fmt.Println("cancel print2")
+			return
+		default:
+		}
+	}
+}
+```
+
+## golang cmd用法
+
+```golang
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+)
+
+//1. 只执行命令 不获取结果
+
+func exec1() {
+	cmd := exec.Command("ls", "-l", "var/log")
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+}
+
+//2.执行命令并获取结果
+
+func exec2() {
+	cmd := exec.Command("pwd")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(string(out))
+		log.Fatal(err)
+	}
+	fmt.Println(string(out))
+}
+
+//3. 执行命令 区分stdout和stderr
+
+func exec3() {
+	cmd := exec.Command("pwd")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
+	fmt.Printf("out:\n%s\nerr:\n%s\n", outStr, errStr)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+//管道组合
+
+func exec4() {
+	c1 := exec.Command("grep", "ERROR", "/var/log/messages")
+	c2 := exec.Command("wc", "-l")
+	c2.Stdin, _ = c1.StdoutPipe()
+	c2.Stdout = os.Stdout
+	_ = c2.Start()
+	_ = c1.Run()
+	_ = c2.Wait()
+}
+
+//设置命令级别的环境变量
+func exec5() {
+	os.Setenv("NAME", "goaxin")
+	cmd := exec.Command("echo", os.ExpandEnv("$NAME"))
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatalf("cmd.Run() failed with %s\n", err)
+	}
+	fmt.Printf("%s", out)
+}
 ```
 
