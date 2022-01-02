@@ -93,6 +93,10 @@ git diff --stat local_branch origin/remote_branch
 
 1. git log 查看要回滚的一个commit
 2.git reset --hard <commit hash id>
+
+#展示提交了很多次 push之前查看修改了哪些文件
+git diff origin/分知名...HEAD
+git diff origin/分知名...HEAD --name-status
 ```
 
 分支管理：`https://www.cnblogs.com/jiaoshou/p/11808361.html`

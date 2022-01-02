@@ -1364,7 +1364,21 @@ yum --disablerepo=* --enablerepo=elrepo-kernel install kernel-ml-tools
 
 
 
+### linux进程状态
 
+R（TASK_RUNNING），可执行状态
+
+只有在该状态下才可能在cpu上运行。而同一时刻可能有多个进程状态处于可执行状态。这些进程的task_struct结构（进程控制块）被放入对应的cpu的可执行队列中。进程调度器的任务就是从各个cpu的可执行队列中选择一个进程放在该cpu上运行。
+
+S（TASK_INTERRUPTIBLE）可中断的睡眠状态。
+
+处于该状态的进程因为等待某个事件发生（比如等待socket连接，等待信号量）而被挂起。这些进程task_struct结构被放入对应的事件的等待队列中。这些事件发生时，对应的等待队列中的一个或多个进程将被唤醒。
+
+D（TASK_UNINTERRUPTIBLE），不可中断的睡眠状态
+
+不可中断是指进程不响应异步信号。并不是cpu不响应外部硬件的中断。
+
+参考文章：https://www.cnblogs.com/klb561/p/11945157.html
 
 
 
