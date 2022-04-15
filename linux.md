@@ -1382,3 +1382,49 @@ D（TASK_UNINTERRUPTIBLE），不可中断的睡眠状态
 
 
 
+### find命令
+
+命令格式：
+
+`find [-H] [-L] [-P] [-D debugopts] [-Olevel] [path...] [expression]`
+
+- `[-H] [-L] [-P] [-D debugopts] [-Olevel]`这部分属于命令选项，比较少用
+- `[path...]` 该参数指定要查找的饭目录，可以同时提供多个目录用空格隔开。可以提供一个文件名，只在当前目录下查找该文件，不会在子目录中查找
+- `[expression]` 该参数指定评估表达式，可以提供多个，不用表达式之间用operator（-o -a -not）操作符分开，表达式有option、test、action三种类型。如果不提供该参数，默认使用-print表达式，也就是打印出所给出的文件名。表达式参数要求以`- ( !  `开头，以便区分开前面的目录参数。注意，bash中要用`\(`转义
+
+### 网卡设置为混杂模式
+
+```
+ifconfig eth0 promisc
+```
+
+### linux系统卡顿排查
+
+#### 1. 内存
+
+```shell
+free -g
+#当free这一栏为0 说明内存吃完了
+```
+
+#### 2.磁盘用量和io
+
+```shell
+df -h
+#当最右侧%util很高时，说明io很高，若想看哪个进程占用IO，执行iotop命令
+iostat -x 1
+```
+
+#### 3.CPU
+
+```bash
+top
+#cpu行的%id表示剩余cpu资源，若很低表示cpu资源被吃完了
+```
+
+
+
+
+
+
+

@@ -97,6 +97,16 @@ git diff --stat local_branch origin/remote_branch
 #展示提交了很多次 push之前查看修改了哪些文件
 git diff origin/分知名...HEAD
 git diff origin/分知名...HEAD --name-status
+
+
+# 修改最近提交的 commit 信息
+$ git commit --amend --message="modify message by daodaotest" --author="jiangliheng <jiang_liheng@163.com>"
+
+# 仅修改 message 信息
+$ git commit --amend --message="modify message by daodaotest"
+
+# 仅修改 author 信息
+$ git commit --amend --author="jiangliheng <jiang_liheng@163.com>"
 ```
 
 分支管理：`https://www.cnblogs.com/jiaoshou/p/11808361.html`
@@ -115,5 +125,41 @@ git pull
 git merge master #合并主分支最新代码到dev分支
 解决冲突
 git push # 推送本地dev分支到远程dev分之
+```
+
+### 检查本地代码修改情况
+
+```bash
+#可以查看当前没有add的内容修改（不在缓冲区的文件变化）
+git diff
+#查看已经add但没有commit的改动（在缓冲区的文件变化）
+git diff --cached
+#上面两个命令的合并
+git diff HEAD
+```
+
+### 修改commit 信息
+
+```bash
+#修改上一条提交的commit message
+git commit --amend
+#修改之前提交的commit message 比如说 修改距离此版本之前的第三条message信息
+git rebase -i HEAD～3
+#显示：
+pick 56b2308 feat(pages): home DONE
+pick 82f65eb fix(pages movie): slides bug fixed
+pick 08b2087 feat(pages home & movie): add FABs animation 
+#将要修改的comimit信息 如 pick 56b2308 feat(pages): home DONE。 pick改成edit，完后保存
+#然后运行
+git commit --amend
+#修改完后 运行
+git rebase --continue
+```
+
+### 追加和合并提交
+
+```bash
+#demo
+首先新建一个text1和text2名，将text1添加到暂存区，并提交到版本库（git commit），然后将text2添加到暂存区（git add），然后提交的时候使用--amend。这样可以将第二次提交追加到第一次。
 ```
 
