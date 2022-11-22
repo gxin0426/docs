@@ -1,14 +1,14 @@
 ## install nfs
 
 ```
-#yum install -y nfs-utils 
-#mkdir /data/volumes/v1
-#systemctl start rpcbind
-#systemctl status rpcbind
-#systemctl enable --now nfs-serve
-#vim /etc/exports
-/data/volumes/v1 *
-#exportfs -arv
+yum install -y nfs-utils 
+mkdir /data/volumes/v1
+systemctl start rpcbind
+systemctl status rpcbindr
+systemctl enable --now nfs-server
+vim /etc/exports
+/data/volumes/v1 *(rw,sync,insecure,no_root_squash)
+exportfs -arv
 ```
 
 ## install storageclass

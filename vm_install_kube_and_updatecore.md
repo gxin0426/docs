@@ -132,9 +132,9 @@ kubeadm config images list --image-repository=registry.aliyuncs.com/google_conta
 ```
 ## init master
 
-```
+```shell
 kubeadm init --image-repository=registry.aliyuncs.com/google_containers  --kubernetes-version=v1.23.6 --service-cidr=10.1.0.0/16 --pod-network-cidr=10.244.0.0/16
-
+#--apiserver-cert-extra-sans 公网ip或者域名
 ```
 ```bash
 # 要开始使用集群，您需要以常规用户身份运行以下命令
