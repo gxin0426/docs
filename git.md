@@ -163,3 +163,20 @@ git rebase --continue
 首先新建一个text1和text2名，将text1添加到暂存区，并提交到版本库（git commit），然后将text2添加到暂存区（git add），然后提交的时候使用--amend。这样可以将第二次提交追加到第一次。
 ```
 
+
+
+### git_learn
+
+#### git_basic
+
+```shell
+git log命令
+
+git log --oneline # 显示一行
+git log --graph #显示层级关系
+git log -n # 只显示几行
+git log --all # 显示所有分支commit信息
+```
+
+
+
