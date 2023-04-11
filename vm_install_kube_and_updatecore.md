@@ -13,15 +13,15 @@ yum --disablerepo=\* --enablerepo=elrepo-kernel list kernel
 
 
 #install kernel
-yum -y --enablerepo=elrepo-kernel install kernel-ml.x86_64 kernel-ml-tools.x86_64
 yum remove kernel-tools-libs.x86_64 kernel-tools.x86_64
+yum -y --enablerepo=elrepo-kernel install kernel-ml.x86_64 kernel-ml-tools.x86_64
 ```
 
 ## startup kernel sequence
 ```bash
 #view all available kernel on the system
 awk -F\' '$1=="menuentry " {print $2}' /etc/grub2.cfg
-
+          
 #set boot new kernel
 grub2-set-default 0
 
@@ -80,10 +80,9 @@ systemctl enable chronyd
 yum install -y chrony
 sed -i 's/^server/#&/' /etc/chrony.conf
 cat >> /etc/chrony.conf  << EOF
-server 192.168.31.127 iburst
+server 192.168.8.204 iburst
 EOF
-systemctl restart chronyd
-systemctl enable chronyd
+systemctl restart chronyd && systemctl enable chronyd
 ```
 
 ## install docker
@@ -96,7 +95,7 @@ systemctl enable docker && systemctl start docker
 ```bash
 cat << EOF > /etc/docker/daemon.json
 {
-  "registry-mirrors": ["https://xxxxx.mirror.aliyuncs.com"],
+  "registry-mirrors": ["https://h3blxdss.mirror.aliyuncs.com"],
   "exec-opts": ["native.cgroupdriver=systemd"]
 }
 EOF
@@ -120,7 +119,7 @@ EOF
 yum install -y --nogpgcheck kubelet-1.23.6 kubeadm-1.23.6 kubectl-1.23.6
 ```
 ```bash
-yum install -y kubelet kubeadm kubectl
+#yum install -y kubelet kubeadm kubectl
 systemctl enable kubelet && systemctl start kubelet
 ```
 ```bash
@@ -133,7 +132,7 @@ kubeadm config images list --image-repository=registry.aliyuncs.com/google_conta
 ## init master
 
 ```shell
-kubeadm init --image-repository=registry.aliyuncs.com/google_containers  --kubernetes-version=v1.23.6 --service-cidr=10.1.0.0/16 --pod-network-cidr=10.244.0.0/16
+kubeadm init --image-repository=registry.aliyuncs.com/google_containers  --kubernetes-version=v1.23.16 --service-cidr=10.1.0.0/16 --pod-network-cidr=10.244.0.0/16
 #--apiserver-cert-extra-sans 公网ip或者域名
 ```
 ```bash
@@ -178,7 +177,7 @@ sudo systemctl restart docker
 sudo docker run --rm --gpus all nvidia/cuda:11.6.2-base-ubuntu20.04 nvidia-smi
 ```
 
-### install nvidia driver for centos7
+### install nvidia-driver for centos7
 
 ```shell
 #update version
@@ -226,7 +225,7 @@ ll /etc/modprobe.d/disable-nouveau.conf
 #重建 initramfs 镜像
 sudo systemctl set-default multi-user.target    #设置运行级别为文本模式
 sudo shutdown -r now
-
+             
 
 #下载驱动包 NVIDIA-Linux-x86_64-525.60.13.run (https://www.nvidia.com/Download/index.aspx?lang=en-us)
 NVIDIA-Linux-x86_64-525.60.13.run

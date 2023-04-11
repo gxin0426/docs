@@ -144,7 +144,7 @@ term.         #正常退出的进程
 
 `worker_processes 1;`
 
-worker_process 值越大 可以支持的并发处理越多
+worker_processes 值越大 可以支持的并发处理越多
 
 
 
@@ -378,4 +378,193 @@ location / {
 发送‘预检请求’时，需要用到方法OPTIONS，所以服务器需要允许该方法
 
 - 参考文章：https://segmentfault.com/a/1190000012550346
+
+
+
+
+
+## nginx 尚硅谷笔记
+
+#### 反向代理
+
+#### 负载均衡
+
+#### 动静分离
+
+### 配置文件
+
+#### 1. 全局快
+
+​	从配置文件开始到events块之间的内容，主要会设置一些影响nginx服务器整体运行的配置指令，包括运行nginx的用户组、允许生成的 work process数， 进程pid存放路径 日志存放路径和类型以及配置文件的引入等
+
+比如，
+
+```
+worker_processes 1;
+user nobody;
+error_log logs/error.log
+pid logs/nginx.pid
+```
+
+这是nginx并发处理服务的关键配置，**worker_processes值越大，可以支持的并发处理越多**， 但受硬件限制
+
+#### 2. events 块
+
+events 块涉及的指令主要影响nginx服务器与用户的网络链接，常用的设置包括是否开启对多 work process下的网络连接进行序列化 ， 是否允许同时接收多个网络链接，选取哪种事件驱动模型来处理请求，每个word process可以同时支持的最大连接数
+
+比如下面配置
+
+```
+events {
+	worker_connections 1024;
+}
+```
+
+#### 3. http 块
+
+代理、缓存和日志定义等绝大多数功能和第三方模块的配置都在这里
+
+需要注意： http也可以包括http全局块、 server块
+
+##### http全局块
+
+http全局块配置的指令包括文件引入、MIME-TYPE定义、日志自定义、连接超时时间、单连接请求数上限
+
+##### server块
+
+这块和虚拟主机关系密切、虚拟主机从用户角度看，和一台独立的硬件主机完全一样，
+
+每个http块可以包括多个server块，而每个server块相当于一个虚拟主机
+
+每个server块也分为全局server块，以及可以同时包括多个location块
+
+###### 全局server块
+
+最常见的配置是本虚拟机的监听配置和本虚拟机的名称和ip配置
+
+#### 反向代理 demo
+
+```shell
+#反向代理 demo
+http{
+	#全局块
+	include mime.type;
+	default_type application/octet-stream;
+	sendfile on;
+	keepalive_timeout 65;
+	server{
+            listen 80;
+            server_name localhost;
+
+            location / {
+                root html;
+                index index.html index.htm;
+                proxy_pass http://test:80;
+		}
+		# 测试
+    server{
+        listen 9001;
+        server_name localhost;
+
+        location ~ /edu/ {
+
+            proxy_pass http://test:8001;
+        }
+        location ~ /vod/ {
+            proxy_pass http://test:8002;
+        }
+	}
+}
+```
+
+##### location配置说明
+
+该指令用于匹配url
+
+语法如下：
+
+```
+location [= | ~ | ~* | ^~] uri {
+
+}
+```
+
+- = : 用于不含正则表达式的uri前，要求请求字符串与uri严格匹配，如果匹配成功，就停止继续向下搜索并立即处理该请求。
+- ~ : 用于表示uri包含正则表达式，并区分大小写。
+- ~* ： 用于表示uri包含正则表达式，并且不区分大小写。
+- ^~ : 用于不含正则表达式的uri前， 要求nginx服务器找到表示uri和请求字符串匹配度最高的location后，立即使用次location处理请求，而不再使用location块中的正则uri和请求字符串匹配。
+
+**注意：如果uri包含正则表达式，则必须要有~ 或者~* 标识**
+
+#### 负载均衡 demo
+
+```
+http{
+	#全局块
+	include mime.type;
+	default_type application/octet-stream;
+	sendfile on;
+	keepalive_timeout 65;
+	
+	upsteam myserver {
+		#fair  weight ip_hash
+		ip_hash;
+		server test:8080;
+		server test:8081;
+	}
+	
+	server{
+            listen 80;
+            server_name localhost;
+
+            location / {
+                root html;
+                index index.html index.htm;
+                proxy_pass http://myserver;
+             }
+		}
+		# 测试
+    server{
+        listen 9001;
+        server_name localhost;
+
+        location ~ /edu/ {
+
+            proxy_pass http://test:8001;
+        }
+        location ~ /vod/ {
+            proxy_pass http://test:8002;
+        }
+	}
+}
+```
+
+#### 动静分离 demo
+
+```
+http{
+	#全局块
+	include mime.type;
+	default_type application/octet-stream;
+	sendfile on;
+	keepalive_timeout 65;
+	
+	
+	server{
+            listen 80;
+            server_name localhost;
+      
+            location /www/ {
+                root /data;
+                index index.html index.htm;
+                proxy_pass http://myserver;
+             }
+             location /image/ {
+                root /data/;
+                index index.html index.htm;
+                proxy_pass http://myserver;
+             }
+	}
+}
+```
 
