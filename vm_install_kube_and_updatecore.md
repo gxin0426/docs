@@ -45,6 +45,7 @@ cat << EOF >> /etc/hosts
 master 192.168.31.127
 kube 192.168.31.128
 EOF
+//
 
 
 # 激活 br_netfilter 模块
@@ -100,8 +101,7 @@ cat << EOF > /etc/docker/daemon.json
 }
 EOF
 
-systemctl daemon-reload
-systemctl restart docker
+ systemctl daemon-reload && systemctl restart docker
 ```
 
 ## install kubeadm 
@@ -242,5 +242,47 @@ sudo shutdown -r now
 #查看是否安装成功
 cat /proc/driver/nvidia/version    
 nvidia-smi
+```
+
+## 磁盘分区挂载
+
+### parted
+
+```
+$ parted /dev/sdb mklabel gpt
+
+$ parted /dev/sdb mkpart primary xfs 0% 100%
+
+$ mkfs.xfs /dev/sdb1
+
+$ mount /dev/sdb1 /data
+
+$ df -hT /data
+
+文件系统       类型  容量  已用  可用 已用% 挂载点
+
+/dev/sdb1      xfs   100G   33M  100G    1% /data
+
+$ vim /etc/fstab
+
+/dev/sdb1   /data   xfs   defaults   0 0
+
+# 实现开机自动挂载
+```
+
+### fdisk
+
+```
+fdisk /dev/sdb
+n 进入分区状态
+p 主分区
+分区大小 默认即可
+w 保存
+mke2fs -t ext4 /dev/sdb1
+mount /dev/sdb1 ~/newpath
+修改  /etc/fstab 
+UUID=c61117ca-9176-4d0b-be4d-1b0f434359a7  /newpath  ext4  defaults  0  0 
+UUID 的获取可以通过这个命令 blkid /dev/sdb1
+最后执行 mount -a 
 ```
 
