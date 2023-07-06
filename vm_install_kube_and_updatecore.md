@@ -1,20 +1,31 @@
 ## update core
 
 ```bash
+#配置阿里yum源命令
+curl -o /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
+curl -o /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
+
+
+#运行以下命令生成缓存
+
+yum clean all
+yum makecache
+yum -y update
+
 //load pubilc key install elrepo
 rpm -import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
 rpm -Uvh http://www.elrepo.org/elrepo-release-7.0-3.el7.elrepo.noarch.rpm
 
 //install el repo meta
-yum --disablerepo=\* --enablerepo=elrepo-kernel repolist
-
+yum list available --disablerepo='*' --enablerepo=elrepo-kernel
 //view available install eprepo
 yum --disablerepo=\* --enablerepo=elrepo-kernel list kernel
 
 
 #install kernel
 yum remove kernel-tools-libs.x86_64 kernel-tools.x86_64
-yum -y --enablerepo=elrepo-kernel install kernel-ml.x86_64 kernel-ml-tools.x86_64
+#yum -y --enablerepo=elrepo-kernel install kernel-ml.x86_64 kernel-ml-tools.x86_64
+sudo yum --enablerepo=elrepo-kernel install kernel-ml kernel-ml-devel
 ```
 
 ## startup kernel sequence
@@ -39,7 +50,7 @@ sed -i '/^SELINUX=/c SELINUX=disabled' /etc/selinux/config
 setenforce 0
 
 swapoff -a
-sed -i 's/^ .*centos-swap/#&/g' /etc/fstab
+sed -i 's/^.*centos-swap/#&/g' /etc/fstab
 
 cat << EOF >> /etc/hosts
 master 192.168.31.127
@@ -74,30 +85,37 @@ server ntp1.aliyun.com iburst
 local stratum 10
 allow
 EOF
-systemctl restart chronyd
-systemctl enable chronyd
+systemctl restart chronyd && systemctl enable chronyd
 
 #node
 yum install -y chrony
 sed -i 's/^server/#&/' /etc/chrony.conf
 cat >> /etc/chrony.conf  << EOF
-server 192.168.8.204 iburst
+server 172.16.101.11 iburst
 EOF
 systemctl restart chronyd && systemctl enable chronyd
 ```
 
+```zsh
+#找到最大的磁盘  挂载到/data目录
+ln -s /data/kubelet /var/lib/kubelet
+ln -s /data/docker /var/lib/docker
+```
+
 ## install docker
+
 ```bash
 yum install -y yum-utils device-mapper-persistent-data lvm2
 yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-yum install -y docker-ce
+yum install -y docker-ce-20.10
 systemctl enable docker && systemctl start docker 
 ```
 ```bash
 cat << EOF > /etc/docker/daemon.json
 {
   "registry-mirrors": ["https://h3blxdss.mirror.aliyuncs.com"],
-  "exec-opts": ["native.cgroupdriver=systemd"]
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "insecure-registries": ["registry-tgq.harbor.com"]
 }
 EOF
 
@@ -117,6 +135,7 @@ gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors
 EOF
 
 yum install -y --nogpgcheck kubelet-1.23.6 kubeadm-1.23.6 kubectl-1.23.6
+yum install --nogpgcheck  --downloadonly --downloaddir=/opt/kubeadm kubelet-1.23.6 kubeadm-1.23.6 kubectl-1.23.6
 ```
 ```bash
 #yum install -y kubelet kubeadm kubectl
@@ -124,6 +143,7 @@ systemctl enable kubelet && systemctl start kubelet
 ```
 ```bash
  kubeadm config images list 
+ kubeadm config images pull  --image-repository=registry.aliyuncs.com/google_containers  --kubernetes-version=v1.23.6
 ```
 ```bash
 kubeadm config images list --image-repository=registry.aliyuncs.com/google_containers
@@ -132,7 +152,7 @@ kubeadm config images list --image-repository=registry.aliyuncs.com/google_conta
 ## init master
 
 ```shell
-kubeadm init --image-repository=registry.aliyuncs.com/google_containers  --kubernetes-version=v1.23.16 --service-cidr=10.1.0.0/16 --pod-network-cidr=10.244.0.0/16
+kubeadm init --image-repository=registry.aliyuncs.com/google_containers  --kubernetes-version=v1.23.6 --service-cidr=10.1.0.0/16 --pod-network-cidr=10.244.0.0/16
 #--apiserver-cert-extra-sans 公网ip或者域名
 ```
 ```bash
@@ -146,8 +166,282 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 ```
 
 ```bash
+#部署flannel
 kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+# 注意修改ip pool 与 --pod-network-cidr 一致
+
+
+# 部署calico
+把calico.yaml里pod所在网段改成kubeadm init时选项--pod-network-cidr所指定的网段 
+- name: CALICO_IPV4POOL_CIDR
+value: "10.244.0.0/16"
+# Disable file logging so `kubectl logs` works.
+- name: CALICO_DISABLE_FILE_LOGGING
+value: "true"
+
+# deploy controller oeprator
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/tigera-operator.yaml
+
+#deploy resource
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/custom-resources.yaml
 ```
+
+#### flannel yaml
+
+```yaml
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: kube-flannel
+  labels:
+    k8s-app: flannel
+    pod-security.kubernetes.io/enforce: privileged
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    k8s-app: flannel
+  name: flannel
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - nodes/status
+  verbs:
+  - patch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - clustercidrs
+  verbs:
+  - list
+  - watch
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    k8s-app: flannel
+  name: flannel
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: flannel
+subjects:
+- kind: ServiceAccount
+  name: flannel
+  namespace: kube-flannel
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    k8s-app: flannel
+  name: flannel
+  namespace: kube-flannel
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kube-flannel-cfg
+  namespace: kube-flannel
+  labels:
+    tier: node
+    k8s-app: flannel
+    app: flannel
+data:
+  cni-conf.json: |
+    {
+      "name": "cbr0",
+      "cniVersion": "0.3.1",
+      "plugins": [
+        {
+          "type": "flannel",
+          "delegate": {
+            "hairpinMode": true,
+            "isDefaultGateway": true
+          }
+        },
+        {
+          "type": "portmap",
+          "capabilities": {
+            "portMappings": true
+          }
+        }
+      ]
+    }
+  net-conf.json: |
+    {
+      "Network": "10.244.0.0/16",
+      "Backend": {
+        "Type": "vxlan"
+      }
+    }
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-flannel-ds
+  namespace: kube-flannel
+  labels:
+    tier: node
+    app: flannel
+    k8s-app: flannel
+spec:
+  selector:
+    matchLabels:
+      app: flannel
+  template:
+    metadata:
+      labels:
+        tier: node
+        app: flannel
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+      hostNetwork: true
+      priorityClassName: system-node-critical
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+      serviceAccountName: flannel
+      initContainers:
+      - name: install-cni-plugin
+        image: docker.io/flannel/flannel-cni-plugin:v1.1.2
+       #image: docker.io/rancher/mirrored-flannelcni-flannel-cni-plugin:v1.1.2
+        command:
+        - cp
+        args:
+        - -f
+        - /flannel
+        - /opt/cni/bin/flannel
+        volumeMounts:
+        - name: cni-plugin
+          mountPath: /opt/cni/bin
+      - name: install-cni
+        image: docker.io/flannel/flannel:v0.22.0
+       #image: docker.io/rancher/mirrored-flannelcni-flannel:v0.22.0
+        command:
+        - cp
+        args:
+        - -f
+        - /etc/kube-flannel/cni-conf.json
+        - /etc/cni/net.d/10-flannel.conflist
+        volumeMounts:
+        - name: cni
+          mountPath: /etc/cni/net.d
+        - name: flannel-cfg
+          mountPath: /etc/kube-flannel/
+      containers:
+      - name: kube-flannel
+        image: docker.io/flannel/flannel:v0.22.0
+       #image: docker.io/rancher/mirrored-flannelcni-flannel:v0.22.0
+        command:
+        - /opt/bin/flanneld
+        args:
+        - --ip-masq
+        - --kube-subnet-mgr
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "50Mi"
+        securityContext:
+          privileged: false
+          capabilities:
+            add: ["NET_ADMIN", "NET_RAW"]
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: EVENT_QUEUE_DEPTH
+          value: "5000"
+        volumeMounts:
+        - name: run
+          mountPath: /run/flannel
+        - name: flannel-cfg
+          mountPath: /etc/kube-flannel/
+        - name: xtables-lock
+          mountPath: /run/xtables.lock
+      volumes:
+      - name: run
+        hostPath:
+          path: /run/flannel
+      - name: cni-plugin
+        hostPath:
+          path: /opt/cni/bin
+      - name: cni
+        hostPath:
+          path: /etc/cni/net.d
+      - name: flannel-cfg
+        configMap:
+          name: kube-flannel-cfg
+      - name: xtables-lock
+        hostPath:
+          path: /run/xtables.lock
+          type: FileOrCreate
+```
+
+#### calico yaml
+
+```yaml
+# This section includes base Calico installation configuration.
+# For more information, see: https://projectcalico.docs.tigera.io/master/reference/installation/api#operator.tigera.io/v1.Installation
+apiVersion: operator.tigera.io/v1
+kind: Installation
+metadata:
+  name: default
+spec:
+  # Configures Calico networking.
+  calicoNetwork:
+    # Note: The ipPools section cannot be modified post-install.
+    ipPools:
+    - blockSize: 26
+      cidr: 192.168.0.0/16
+      encapsulation: VXLANCrossSubnet
+      natOutgoing: Enabled
+      nodeSelector: all()
+
+---
+
+# This section configures the Calico API server.
+# For more information, see: https://projectcalico.docs.tigera.io/master/reference/installation/api#operator.tigera.io/v1.APIServer
+apiVersion: operator.tigera.io/v1
+kind: APIServer
+metadata:
+  name: default
+spec: {}
+
+```
+
+
 
 ## add node
 
@@ -229,7 +523,7 @@ sudo shutdown -r now
 
 #下载驱动包 NVIDIA-Linux-x86_64-525.60.13.run (https://www.nvidia.com/Download/index.aspx?lang=en-us)
 NVIDIA-Linux-x86_64-525.60.13.run
-
+sudo rpm -ivh http://elrepo.org/linux/kernel/el7/x86_64/RPMS/kernel-ml-devel-6.3.2-1.el7.elrepo.x86_64.rpm
 
 lsmod | grep nouveau                            #查看nouveau是否已经禁用, 应该没有返回内容
 nvidia_run=NVIDIA-Linux-x86_64-460.84.run
@@ -284,5 +578,131 @@ mount /dev/sdb1 ~/newpath
 UUID=c61117ca-9176-4d0b-be4d-1b0f434359a7  /newpath  ext4  defaults  0  0 
 UUID 的获取可以通过这个命令 blkid /dev/sdb1
 最后执行 mount -a 
+```
+
+### 节点集群间迁移
+
+```shell
+$ kubeadm reset
+$ systemctl stop kubelet
+$ systemctl stop docker
+$ rm -rf /var/lib/cni/
+$ rm -rf /var/lib/kubelet/*
+$ rm -rf /etc/cni/
+$ rm -rf /var/lib/etcd/*
+$ ifconfig cni0 downdocker
+$ ifconfig flannel.1 down
+$ ifconfig docker0 down
+ip link set cni0 down && ip link set flannel.1 down 
+ip link delete cni0 && ip link delete flannel.1
+systemctl restart docker && systemctl restart kubelet
+
+
+rm -rf /root/.kube/config
+然后执行命令加入到其他集群
+```
+
+### master重新加入集群
+
+```shell
+#我们有时候会有删除master节点，再重新加入master节点的需求，比如master机器改名。这里注意重新加入时，经常会出现etcd报错
+[check-etcd] Checking that the etcd cluster is healthy error executionini phase check-etcd: etcd cluster is not healthy: failed to dial endpoint https://ip:2379 with maintenance client: context deadline exceeded
+
+#这个时候，就需要去还没有停止的master节点里的etcd的pod里去，删除该老master节点对应的etcd信息
+kubectl drain master01
+kubectl delete node master01
+
+#master01 执行
+kubeadm reset
+rm -rf /etc/kubernetes/manifests/
+
+kubectl exec -it etcd-master02 sh
+etcdctl --endpoints 127.0.0.1:2379 --cacert /etc/kubernetes/pki/etcd/ca.crt --cert /etc/kubernetes/pki/etcd/server.crt --key /etc/kubernetes/pki/etcd/server.key member list
+
+#找到对应的hash
+etcdctl --endpoints 127.0.0.1:2379 --cacert /etc/kubernetes/pki/etcd/ca.crt --cert /etc/kubernetes/pki/etcd/server.crt --key /etc/kubernetes/pki/etcd/server.key member remove 12637f5ec2bd02b8
+
+
+
+kubeadm init phase upload-certs --upload-certs  # 返回certificates-key
+
+
+#执行加入命令
+You can now join any number of the control-plane node running the following command on each as root:
+
+  kubeadm join 172.16.101.211:9443 --token abcdef.0123456789abcdef \
+        --discovery-token-ca-cert-hash sha256:ae579faf241a307a860d0a9e9ba1e308fe0e7a6006b90ece97eb42dfe9fc59b8 \
+        --control-plane --certificate-key 79d731d185a93121e73899c10445f5fcaeac8d33155f5402c48bed5543f59e3b
+
+Please note that the certificate-key gives access to cluster sensitive data, keep it secret!
+As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you can use
+"kubeadm init phase upload-certs --upload-certs" to reload certs afterward.
+
+Then you can join any number of worker nodes by running the following on each as root:
+
+kubeadm join 172.16.101.211:9443 --token abcdef.0123456789abcdef \
+        --discovery-token-ca-cert-hash sha256:ae579faf241a307a860d0a9e9ba1e308fe0e7a6006b90ece97eb42dfe9fc59b8
+
+
+  kubeadm join 172.16.101.211:9443 --token abcdef.0123456789abcdef \
+        --discovery-token-ca-cert-hash sha256:ae579faf241a307a860d0a9e9ba1e308fe0e7a6006b90ece97eb42dfe9fc59b8 \
+        --control-plane --certificate-key 28d8cd85b5b90fe7603c599915521c20dc5ab5e6be28b52d904b44efb91eed19
+```
+
+### 离线安装教程
+
+```
+https://cloud.tencent.com/developer/article/2165251
+```
+
+离线安装NFS
+
+```
+https://blog.csdn.net/u013014761/article/details/100054241
+https://qizhanming.com/blog/2018/08/08/how-to-install-nfs-on-centos-7
+https://blog.csdn.net/u013014761/article/details/100054241
+https://cloud.tencent.com/developer/article/2254970
+```
+
+### keepalived
+
+```
+https://www.cnblogs.com/rexcheny/p/10778567.html
+```
+
+### HA
+
+```
+https://www.cnblogs.com/wubolive/p/17140058.html#_label0_0
+https://ost.51cto.com/posts/13131
+https://www.linuxtechi.com/setup-highly-available-kubernetes-cluster-kubeadm/
+https://developer.aliyun.com/article/1136864
+https://hevodata.com/learn/kubernetes-high-availability/
+```
+
+### tecent article
+
+```
+https://tencentcloudcontainerteam.github.io/2019/08/12/troubleshooting-with-kubernetes-network/
+https://tencentcloudcontainerteam.github.io/2019/12/15/no-route-to-host/
+```
+
+### kubeadm 离线安装包下载
+
+```
+yum install --downloadonly --downloaddir=/home/centos/k8s kubelet-1.23.6 kubeadm-1.23.6 kubectl-1.23.6
+```
+
+```
+external IP 不兼容 ipvs 问题
+https://blog.csdn.net/qq_41586875/article/details/124330823
+```
+
+
+
+### regenerate admin.conf
+
+```bash
+kubeadm init phase kubeconfig admin 
 ```
 
