@@ -3,10 +3,34 @@
 ### num01
 
 ```bash
+ cd /home/shiyanlou/oslab/
+ tar -zxvf hit-oslab-linux-20110823.tar.gz -C /home/shiyanlou/
+ ls -al
+ # 窗口最小化后无法找到
+ 面板 -> 添加新项目 -> 窗口菜单 -> Add 来打开显示 
+ hdc-0.11.img 内包含有：
+
+    Bash shell；
+    一些基本的 Linux 命令、工具，比如 cp、rm、mv、tar；
+    vi 编辑器；
+    gcc 1.4 编译器，可用来编译标准 C 程序；
+    as86 和 ld86；
+    Linux 0.11 的源代码，可在 0.11 下编译，然后覆盖现有的二进制内核。
 
 ```
 
 ### num02
+
+```
+    include/unistd.h中添加系统调用号
+    在kernel/system_call.s修改总调用数
+    include/linux/sys.h添加调用
+    修改kernel/Makefile
+    在内核文件中实现foo.c
+    make all重新编译系统，使用gcc编译用户态程序
+```
+
+
 
 ### num03
 
@@ -24,11 +48,8 @@
 
 ```shell
 #实验课
-https://blog.csdn.net/weixin_43987915/category_10331305.html?spm=1001.2014.3001.5482
+https://blog.csdn.net/qq_42518941?type=lately
 https://zhuanlan.zhihu.com/p/452389902
-https://juejin.cn/post/6936136067812851742
-https://github.com/hoverwinter/HIT-OSLab
-https://blog.csdn.net/qq_42518941/category_11232052.html
 ```
 
 ### os terminology/terms
@@ -438,3 +459,17 @@ ALU control-UNIT RAM clock
 立即值
 
 <img src=osimage\pipeline.png width=60% height=60% align='left'>
+
+## 编译
+
+### one
+
+https://pandolia.net/tinyc/ch1_overview.html
+
+### two
+
+https://wizardforcel.gitbooks.io/diy-c-compiler/content/10.html
+
+### Compile Optimization
+
+https://zhuanlan.zhihu.com/p/531870731

@@ -1,45 +1,15 @@
-### -1.改变目录所有者和权限
-
-chown -R gaoxin:gaoxin /opt
-
-chmod 777 /opt
-
-**chgrp 用户名  文件名 -R**
-
-**chown 用户名  文件名 -R**
-
-### 0.配置阿里yum源
+###### 0.配置阿里yum源
 
 ~~~shell
 #配置阿里yum源命令
 curl -o /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
 curl -o /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
-
-
 #运行以下命令生成缓存
 yum clean all
 yum makecache
 ~~~
 
-### 1.rpm
-
-```shell
-rpm -qa |grep [包名]
-rpm -e //删除包
-
-－ivh：安装显示安装进度--install--verbose--hash
-－Uvh：升级软件包--Update；
-－qpl：列出RPM软件包内的文件信息[Query Package list]；
-－qpi：列出RPM软件包的描述信息[Query Package install package(s)]；
-－qf：查找指定文件属于哪个RPM软件包[Query File]；
-－Va：校验所有的RPM软件包，查找丢失的文件[View Lost]；
-－e：删除包
-
-#参考文章
-https://blog.csdn.net/zhaoyue007101/article/details/8485186
-```
-
-### 2.查看系统版本
+###### 2.查看系统版本
 
 ```shell
 #查看系统发行版本
@@ -49,13 +19,14 @@ cat /etc/redhat-release
 uname -a
 ```
 
-### 3.centos中的tmpfs
+###### 3.centos中的tmpfs
 
 ~~~shell
-/dev - 含有针对所有设备的设备文件的目录
-/dev/shm - 包含共享内存分配
-/run - 用于系统日志
-/sys/fs/cgroup - 用于cgroup 一个针对特定进程限制 管理和审计资源利用的内核特性
+#是一种临时文件系统，它将一部分系统内存用作虚拟文件系统，用于临时存储数据。tmpfs 的作用是提供一个基于内存的文件系统，可以用来存储临时文件、缓存数据、临时运行时文件等，从而在许多情况下提高性能和效率。
+
+/dev/shm  #包含共享内存分配
+/run   #用于系统日志
+/sys/fs/cgroup #用于cgroup 一个针对特定进程限制 管理和审计资源利用的内核特性
 
 #你可以使用systemctl命令在tmp目录启用tmpfs， 首先用下面的命令来检查这个特性是否可用：
 systemctl is-enabled tmp.mount
@@ -66,9 +37,9 @@ systemctl enable tmp.mount
 tmpfs /tmp tmpfs size=512m 0 0
 ~~~
 
-### 4.mount命令用法和问题
+###### 4.mount命令用法和问题
 
-#### 1.mount用法
+- mount用法
 
 ~~~shell
 挂载方法： mount Device MOUNT_POINT
@@ -116,8 +87,6 @@ diff: upper
 work: work
 ~~~
 
-#### 2.遇到的bug
-
 ~~~shell
 #问题描述
 #当创建一个新的进程并且挂载proc时，退出后在终端执行命令 mount 会出现下面的错误
@@ -126,9 +95,7 @@ mount: failed to read mtab: No such file or directory
 mount -t proc proc /proc
 ~~~
 
-
-
-### 5.几个常用的关机命令
+###### 5.几个常用的关机命令
 
 ```shell
 halt: 关机但不关闭电源（加p参数关闭电源）不加参数时调用shutdown命令
@@ -137,17 +104,23 @@ halt -f 强制关机
 halt -i 关机或重启前关闭所有网络接口
 
 
-shutdown实际上是调用init 0, init 0会cleanup一些工作然后调用halt或者poweroff。其实主要区别是halt和poweroff，做没有acpi的系统上，halt只是关闭了os，电源还在工作，你得手动取按一下那个按钮，而poweroff会发送一个关闭电源的信号给acpi。但在现在的系统上，他们实际上都一样了
-
+shutdown实际上是调用init 0, init 0会cleanup一些工作然后调用halt或者poweroff。其实主要区别是halt和poweroff，在没有acpi的系统上，halt只是关闭了os，电源还在工作，你得手动取按一下那个按钮，而poweroff会发送一个关闭电源的信号给acpi。但在现在的系统上，他们实际上都一样了
 ```
 
-### 6.lsblk命令
+###### 6.lsblk命令
 
 ```shell
 lsblk可以列出所有可用块设备的信息。比如逻辑磁盘，而df -h 是查看文件系统级别的信息
+NAME: 块设备的名称。
+MAJ:MIN: 主设备号和次设备号，用于唯一标识设备。
+RM: 可移除性标志，0 表示设备不可移除，1 表示设备可移除。
+SIZE: 设备的总大小。
+RO: 只读标志，0 表示设备可读写，1 表示设备只读。
+TYPE: 设备的类型，如 disk 表示硬盘，part 表示分区，rom 表示只读光盘等。
+MOUNTPOINT: 如果设备已挂载，显示挂载点；如果未挂载，该字段为空。
 ```
 
-### 7.快捷键
+###### 7.快捷键
 
 ```shell
 1.ctrl+a #光标回到行首
@@ -160,7 +133,7 @@ lsblk可以列出所有可用块设备的信息。比如逻辑磁盘，而df -h 
 8.Ctrl+d #向行尾删除一个字符
 ```
 
-### 8. snat dnat MASQUERADE
+###### 8. snat dnat MASQUERADE
 
 https://www.cnblogs.com/Dicky-Zhang/p/5934657.html
 
@@ -1421,10 +1394,3 @@ iostat -x 1
 top
 #cpu行的%id表示剩余cpu资源，若很低表示cpu资源被吃完了
 ```
-
-
-
-
-
-
-

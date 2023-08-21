@@ -3235,5 +3235,10 @@ func NewMyType() Foo {
 
 架构分类： 六边形架构 洋葱架构 整洁架构  COLA
 
+## go template
 
+https://www.calhoun.io/intro-to-templates-p3-functions/
 
+https://cloud.tencent.com/developer/article/1683688
+
+https://www.cnblogs.com/f-ck-need-u/p/10035768.html
