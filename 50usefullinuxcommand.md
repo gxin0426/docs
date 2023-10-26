@@ -7,11 +7,11 @@
 | 1.dmesg | 2.dd             | 3.tcpdump  | 4.ss           | 5.top                | 6.du                 |
 | ------- | ---------------- | ---------- | -------------- | -------------------- | -------------------- |
 | 7.iperf | 8.find           | 9.awk      | 10.sed         | 11.grep              | 12.route             |
-| 13.ip   | 14.lsof          | 15.netstat | 16.rpm         | 17.dpkg              | 18.diff              |
+| 13.ip   | 14.lsof/fuser    | 15.netstat | 16.rpm         | 17.dpkg              | 18.diff              |
 | 19.ps   | 20.kill          | 21.unset   | 22.EOF >>      | 23.特殊符号: % $ # & | 24.until             |
 | 25.cut  | 26.vmstat/mpstat | 27.free    | 28.curl & wget | 29.iptables          | 30.nmap              |
 | 31.jq   | 32.sort          | 33.strace  | 34.uptime      | 35.iostat            | 36.sysctl/modelprobe |
-|         |                  |            |                |                      |                      |
+| 37.sar  |                  |            |                |                      |                      |
 
 #### top50
 
@@ -754,3 +754,50 @@ C 和 C++ 之间在语法上有很多细微的区别，下面列举了其中一�
 
 
 
+
+
+
+
+<img src="50use/linuxperformance.jpg" width="800" >
+
+这张图展示了Linux性能工具的全景。它涵盖了从应用程序、系统库、系统调用、到硬件等多个层面。我将为你概括每个工具的基本用途：
+
+1. **System Call Interface**:
+   - `strace`: 跟踪系统调用和信号。
+   - `perf`: Linux性能观察、分析和调试工具。
+   - `ltrace`: 跟踪用户空间函数调用。
+
+2. **Applications**:
+   - `opensnoop`, `statsnoop`, `syncsnoop`, etc.: 用于观察文件打开、状态和同步操作。
+
+3. **File Systems**:
+   - `ext4slower`, `ext4dist`, etc.: 观察EXT4文件系统的慢操作。
+   - `xfs*`: XFS文件系统的相关工具。
+
+4. **Volume Manager**:
+   - `df`, `mdadm`, `dmsetup`, etc.: 观察和管理磁盘和存储卷。
+
+5. **Block Device Interface**:
+   - `biotop`, `biosnoop`, etc.: 观察和分析块设备I/O。
+
+6. **Device Drivers**:
+   - `ss`, `tcpdump`, `iptables`, etc.: 用于网络和设备驱动的分析。
+
+7. **System Libraries**:
+   - `gethostlatency`, `cudastat`, `dmesg`, etc.: 观察和分析与系统库相关的性能。
+
+8. **Schedulers**:
+   - `schedtool`, `mpstat`, `top`, etc.: 观察和管理任务调度。
+
+9. **Virtual Memory**:
+   - `slabtop`, `vmstat`, etc.: 分析虚拟内存使用情况。
+
+10. **Hardware**:
+   - `intel_gpu_top`, `intel_gpu_frequency`, etc.: 观察和管理硬件性能，特别是GPU。
+
+11. **Others**:
+   - `iostat`, `netstat`, `ip`, `ethool`, etc.: 这些是多种用途的工具，包括磁盘I/O、网络状态和接口设置。
+
+此外，图中的注释提到了工具的来源和类型，如`observability tools` (可观察性工具)、`static performance tools` (静态性能工具) 和 `perf-tools/bcc tracing tools` (基于BCC的追踪工具)。
+
+这只是每个工具的简要概述。为了更深入地理解每个工具的功能和用法，建议查阅相应的手册页或其他文档。
