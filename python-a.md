@@ -1011,7 +1011,7 @@ print(car3.speed)  # 输出: 190
 实例方法、类方法和静态方法是 Python 中定义在类内部的三种方法，它们有不同的应用场景和调用方式。
 
 1. 实例方法：
-    
+   
     - 定义：实例方法的第一个参数是`self`，它表示类的实例。
     - 调用：需要通过类的实例来调用。
 
@@ -1049,7 +1049,7 @@ print(car3.speed)  # 输出: 190
     ```
     
 3. 静态方法：
-    
+   
     - 定义：静态方法没有特殊的第一个参数（如`self`或`cls`）。使用`@staticmethod`装饰器定义。
     - 调用：可以通过类或其实例来调用。
     - 场景：当方法不需要访问实例或类的属性，但仍与类相关并需要在类内部定义时。
@@ -1185,7 +1185,7 @@ c.greet()  # 输出顺序是：Child -> A -> B -> Base
 在上面的代码中，`Child`类从`A`和`B`类继承，因此当调用`c.greet()`时，方法解析顺序确保了`A`的`greet`、`B`的`greet`和`Base`的`greet`都会被按照正确的顺序调用。
 
 3. 使用super()初始化父类: 
-  当子类需要继承父类的属性时，常使用`super()`在子类的`__init__`方法中初始化父类。
+    当子类需要继承父类的属性时，常使用`super()`在子类的`__init__`方法中初始化父类。
 
   ```python
   class Parent:
@@ -1354,7 +1354,7 @@ with measure_time():
 序列中的 `+`, `+=` 和 `extend()` 方法都与序列的连接和扩展有关，但它们的工作方式和使用场景有所不同。以下是它们之间的主要区别：
 
 1. `+` (连接)
-    
+   
     - `+` 用于连接两个相同类型的序列，例如两个列表或两个字符串。
     
     - 它不会修改原始序列，而是返回一个新的序列。
@@ -1367,7 +1367,7 @@ with measure_time():
       ```
     
 2. `+=` (原地增加)
-    
+   
     - 对于可变序列，如列表，`+=` 会原地修改序列。
     
     - 它等效于使用 `extend()` 方法对列表进行扩展。
@@ -1379,7 +1379,7 @@ with measure_time():
       ```
     
 3. `extend()` (扩展)
-    
+   
     - `extend()` 是列表的一个方法，用于在列表的末尾添加另一个序列的元素。
     
     - 它会修改原始列表。
@@ -1431,7 +1431,7 @@ with measure_time():
       ```
 
 3. `insort_left(a, x, lo=0, hi=len(a))`:
-    
+   
     - 将 `x` 插入到 `a` 中，使其保持排序顺序。如果 `x` 已经存在于 `a` 中，将其插入在 `x` 左边的位置。
     
       ```python
@@ -2209,7 +2209,7 @@ print(temp.celsius)  # 输出: 0.0
 `__getattr__` 和 `__getattribute__` 是特殊的魔法方法，用于定制属性的获取行为。其中 `__getattr__` 只有在属性找不到时调用，而 `__getattribute__` 则在每次属性访问时都会被调用。
 
 1. `__getattribute__`：
-    
+   
     - 这是一个非常强大的魔法方法，因为**每次访问对象的任何属性时都会调用它**，无论该属性是否存在。
     - 由于它的这种行为，需要特别小心地使用它，以避免无限递归（因为在该方法内部访问任何属性都会再次触发它）。
     
@@ -2410,7 +2410,7 @@ user = User(), 那么user.age 顺序如下：
 `__new__` 和 `__init__` 都是 Python 中用于对象创建和初始化的魔法方法，但它们有明确的区别和用途。`__new__` 是一个静态方法，负责创建并返回一个对象实例，而 `__init__` 用于初始化这个对象的状态。
 
 1. `__new__`:
-    
+   
     - `__new__` 是一个静态方法，它在 `__init__` 之前被调用。
     - 它负责创建并返回一个新的实例。如果没有重新定义 `__new__`，默认情况下它会创建一个该类的实例并返回。
     - 这是少数几个显式需要返回值的魔法方法之一（它必须返回一个实例）。
@@ -2477,7 +2477,7 @@ user = User(), 那么user.age 顺序如下：
         在上述单例模式示例中，我们首先检查 `_instance` 是否已经存在，如果不存在，则调用超类的 `__new__` 方法来创建一个实例。如果已经存在，则直接返回这个实例。这确保了 `Singleton` 类始终只有一个实例。
     
 2. `__init__`:
-    
+   
     - `__init__` 用于初始化已创建的实例。
     - 与 `__new__` 不同，`__init__` 并不需要返回任何值。它只是修改对象的状态。
     - 在对象创建后立即被调用。
@@ -2579,7 +2579,7 @@ print(obj.my_method()) # 输出: Hello from my_method
 在这个例子中，我们创建了一个类`MyClass`，它继承了`object`并有一个类变量`x`和一个方法`my_method`。
 
 3. 自定义元类:
-  虽然`type`是最原始的元类，但我们可以定义自己的元类来更改类的创建方式。要定义自己的元类，只需继承`type`并重写其方法，例如`__new__`和`__init__`。
+    虽然`type`是最原始的元类，但我们可以定义自己的元类来更改类的创建方式。要定义自己的元类，只需继承`type`并重写其方法，例如`__new__`和`__init__`。
 
 ```python
 class Meta(type):
@@ -3196,3 +3196,848 @@ if __name__ == "__main__":
 6. 获取本机信息: 使用 `gethostname()`, `gethostbyname()` 和其他相关方法。
 
 7. 高级功能: 包括但不限于 SSL 封装、多路复用（使用 `select` 或 `selectors` 模块）等。
+
+### 第十一章-多线程-多进程
+
+##### 11.1 python中的GIL
+
+具有GIL的Python环境中，即使在多核CPU上，也只有一个线程在任何给定时间点执行Python字节码
+
+一个简单的 Python C 扩展示例，该示例首先释放 GIL，然后进行 CPU 密集型操作，之后再次获取 GIL。通过这个示例，您可以比较在释放 GIL 前后多线程程序的性能
+
+```c
+// gil_demo.c  C 扩展代码 
+#include <Python.h>
+#include <math.h>
+
+static PyObject *cpu_intensive_task(PyObject *self, PyObject *args) {
+    double result = 0.0;
+    for (int i = 0; i < 100000000; i++) {
+        result += sin(i) * tan(i);
+    }
+    return PyFloat_FromDouble(result);
+}
+
+static PyObject *cpu_intensive_task_no_gil(PyObject *self, PyObject *args) {
+    double result = 0.0;
+
+    Py_BEGIN_ALLOW_THREADS
+
+    for (int i = 0; i < 100000000; i++) {
+        result += sin(i) * tan(i);
+    }
+
+    Py_END_ALLOW_THREADS
+
+    return PyFloat_FromDouble(result);
+}
+
+static PyMethodDef GILDemoMethods[] = {
+    {"cpu_intensive_task", cpu_intensive_task, METH_VARARGS, "Execute a CPU-intensive task."},
+    {"cpu_intensive_task_no_gil", cpu_intensive_task_no_gil, METH_VARARGS, "Execute a CPU-intensive task without GIL."},
+    {NULL, NULL, 0, NULL}
+};
+
+static struct PyModuleDef gildemomodule = {
+    PyModuleDef_HEAD_INIT,
+    "gil_demo",
+    NULL,
+    -1,
+    GILDemoMethods
+};
+
+PyMODINIT_FUNC PyInit_gil_demo(void) {
+    return PyModule_Create(&gildemomodule);
+}
+```
+
+```python
+#构建扩展 (setup.py)
+
+from distutils.core import setup, Extension
+
+module = Extension('gil_demo', sources=['gil_demo.c'])
+
+setup(name='GILDemo',
+      version='1.0',
+      description='This is a demo module to demonstrate GIL in C extensions.',
+      ext_modules=[module])
+```
+
+构建并安装模块:  `python setup.py build_ext --inplace`
+
+```python
+#Python 测试脚本 (test_gil.py):
+
+import threading
+import gil_demo
+import time
+
+def test_task(use_gil=True):
+    if use_gil:
+        return gil_demo.cpu_intensive_task()
+    else:
+        return gil_demo.cpu_intensive_task_no_gil()
+
+def main():
+    NUM_THREADS = 4
+
+    # With GIL
+    start_time = time.time()
+    threads = []
+    for _ in range(NUM_THREADS):
+        thread = threading.Thread(target=test_task)
+        threads.append(thread)
+        thread.start()
+    for thread in threads:
+        thread.join()
+    end_time = time.time()
+    print(f"Task with GIL took {end_time - start_time:.2f} seconds.")
+
+    # Without GIL
+    start_time = time.time()
+    threads = []
+    for _ in range(NUM_THREADS):
+        thread = threading.Thread(target=test_task, args=(False,))
+        threads.append(thread)
+        thread.start()
+    for thread in threads:
+        thread.join()
+    end_time = time.time()
+    print(f"Task without GIL took {end_time - start_time:.2f} seconds.")
+
+if __name__ == '__main__':
+    main()
+```
+
+##### 11.2 python多线程编程
+
+由于全局解释器锁（GIL）的存在，对于CPU密集型任务，线程可能并不会带来期望的性能提升，尤其在多核处理器上。但对于I/O密集型任务，如文件I/O、网络操作等，使用线程可以显著提高效率
+
+```python
+import threading
+
+def worker():
+    """thread worker function"""
+    print('Worker')
+
+threads = []
+for i in range(5):
+    t = threading.Thread(target=worker)
+    threads.append(t)
+    t.start()
+```
+
+线程同步:
+
+```python
+import threading
+
+class Counter(object):
+    def __init__(self):
+        self.value = 0
+        self._lock = threading.Lock()
+    
+    def increment(self):
+        with self._lock:
+            self.value += 1
+```
+
+##### 11.3 线程间通信-Queue
+
+Python的`threading`模块提供了一些基本的同步原语，但对于线程间的通信，`queue`模块提供了一个更高级、更易于使用的方法，即`Queue`类。
+
+`Queue`是一个线程安全的数据结构，允许多个线程安全地向其添加或从中删除项。
+
+Queue的基本操作：
+
+1. **`put(item)`**: 将项放入队列。如果队列已满，并且没有可用的空间，那么它将阻塞，直到有空间为止，除非提供了`block=False`。
+
+2. **`get()`**: 从队列中删除并返回一个项目。如果队列为空，那么它将阻塞，直到有一个项目可用，除非提供了`block=False`。
+
+3. **`empty()`**: 如果队列为空，返回True。
+
+4. **`full()`**: 如果队列已满，返回True。
+
+5. **`qsize()`**: 返回队列的当前大小。
+
+使用Queue进行线程间通信的示例：
+
+```python
+import threading
+import queue
+import time
+
+def producer(q):
+    for i in range(5):
+        print("Produced", i)
+        q.put(i)
+        time.sleep(1)
+
+def consumer(q):
+    while True:
+        item = q.get()
+        if item is None:
+            break
+        print("Consumed", item)
+
+# 创建一个队列
+q = queue.Queue()
+
+# 创建并启动生产者和消费者线程
+t1 = threading.Thread(target=producer, args=(q,))
+t2 = threading.Thread(target=consumer, args=(q,))
+
+t1.start()
+t2.start()
+
+# 等待生产者线程完成
+t1.join()
+
+# 停止消费者线程
+q.put(None)
+t2.join()
+```
+
+在上面的示例中，我们有一个生产者线程和一个消费者线程。生产者线程生产数据并将其放入队列，而消费者线程从队列中取出并消费数据。
+
+注意事项：
+
+- 当使用`Queue`作为线程间的通信机制时，尤其要注意阻塞调用，如`get()`和`put()`。这些方法在默认情况下会阻塞，直到它们可以执行（即，直到有数据可用或有空间可用）。
+  
+- 在上述示例中，我们使用了一个特殊的值`None`来指示消费者线程应当停止。这是一个常见的模式，但您应当确保队列的正常数据永远不会包含这个特殊值。
+
+总的来说，`Queue`提供了一个强大、灵活且线程安全的方式来在线程之间传递消息或数据。对于需要多线程并发处理的任务，使用`Queue`来组织和协调线程之间的工作是一个很好的选择。
+
+##### 11.4 线程同步 (Lock, RLock, Semaphores, Condition)
+
+###### RLock
+
+在Python的`threading`模块中，`RLock`是"Reentrant Lock"的缩写，也叫可重入锁。**它允许同一个线程多次获取同一个锁，这是与普通的`Lock`对象的主要区别**。
+
+使用场景：
+
+当你有某些代码需要重复调用某个已经加锁的方法时，使用`RLock`是非常有用的。例如，你有两个方法，`methodA`和`methodB`，`methodA`在执行时可能会调用`methodB`。如果两者都需要同一个锁，那么使用`RLock`可以确保不会因为同一个线程试图再次获取同一个锁而导致死锁。
+
+以下是一个简单的例子，说明`RLock`的使用方法：
+
+```python
+import threading
+
+class SimpleClass:
+    def __init__(self):
+        self.rlock = threading.RLock()
+        # self.lock = threading.Lock()
+    def methodA(self):
+        with self.rlock:
+        # 死锁
+        with self.lock:
+            print("In methodA")
+            self.methodB()
+
+    def methodB(self):
+        with self.rlock:
+        #产生死锁
+        # with self.lock:
+            print("In methodB")
+
+obj = SimpleClass()
+obj.methodA()
+```
+
+在这个例子中，当`methodA`被调用时，它会获取`rlock`并进入临界区域。然后，它调用`methodB`，这时`methodB`同样尝试获取`rlock`。如果这是一个普通的`Lock`，这将会导致死锁，因为`methodA`已经持有锁并等待`methodB`，而`methodB`又等待获得同一个锁。但由于我们使用了`RLock`，所以`methodB`可以在`methodA`的锁定范围内再次获取同一个锁。
+
+使用`RLock`时要小心确保每次获取锁都有对应的释放，否则其他线程可能会永久地被阻止获取该锁。
+
+###### Semaphore
+
+`Semaphore` 是 Python 中 `threading` 模块提供的一个同步原语，它内部维护了一个计数器。这个计数器由两个主要方法进行管理：`acquire()` 和 `release()`。
+
+- 当一个线程调用 `acquire()` 方法且计数器大于零时，计数器会减少。
+- 当一个线程调用 `release()` 方法时，计数器会增加。
+- 当计数器为零时，`acquire()` 会阻塞，直到其他线程调用 `release()`。
+
+`Semaphore` 可以被用作一种意味着只有有限数量的线程可以同时访问某一资源或执行特定的操作的同步原语。
+
+以下是一个简单的例子，模拟了一个线程池，其中只有3个线程可以同时执行任务：
+
+```python
+import threading
+import time
+
+# 定义一个信号量，允许最多3个线程同时执行
+sem = threading.Semaphore(3)
+
+def task():
+    with sem:
+        print(f"{threading.current_thread().name} starts")
+        time.sleep(2)
+        print(f"{threading.current_thread().name} finishes")
+
+threads = []
+
+for i in range(5):
+    t = threading.Thread(target=task)
+    threads.append(t)
+    t.start()
+
+for t in threads:
+    t.join()
+```
+
+在这个例子中，你会看到只有3个线程会首先开始执行任务。其他线程会等待，直到前面的线程完成并释放信号量为止。
+
+`Semaphore` 的一个常见用例是限制对资源的并发访问，例如限制同时执行的数据库连接数、同时访问的文件数等。在日常的软件开发中，信号量 (`Semaphore`) 主要用于控制对资源的并发访问，确保资源在高并发环境中的安全使用。以下是一些常见的应用场景：
+
+1. 限制并发连接数：例如，一个应用可能要与数据库或外部服务进行连接，但这些资源可能有并发连接的限制。使用信号量可以确保不超过这些限制。
+
+2. 限制内存或CPU使用：如果有一个操作非常占用内存或CPU，你可能想要限制同时执行该操作的线程数。信号量可以帮助实现这个限制。
+
+3. Web 服务器或应用服务器中的线程池：服务器通常使用线程池来处理请求。为了避免系统过载，可能需要限制可以并发执行的线程数量。信号量可以帮助管理这个线程池的大小。
+
+4. 限制访问文件或网络资源：例如，当多个线程需要写入同一个文件或使用网络带宽时，使用信号量可以防止过多的并发写入或网络请求。
+
+5. 限制访问计算密集型资源：在某些情况下，特定的计算任务可能非常密集，而你希望在任何给定的时间只有少量的这些任务正在运行。信号量可以帮助你管理这些任务的并发执行。
+
+6. 流量整形：在某些应用中，可能需要限制发送到外部系统的请求的速率，特别是当外部系统有请求速率限制时（例如，很多API有速率限制）。信号量可以帮助实现这种速率限制。
+
+7. 作为计数器：虽然信号量的主要用途是作为控制并发的工具，但它们也可以作为简单的线程安全计数器。
+
+在使用信号量时，重要的是确保在所有的代码路径上都正确地获取和释放信号量，避免死锁和资源泄露。
+
+###### Condition
+
+`Condition` 是 Python 的 `threading` 模块中的一个同步原语，它可以使一个或多个线程等待某个条件满足，而其他线程则可以设置或修改这个条件，并在条件满足后通知正在等待的线程。
+
+### 使用方法：
+
+`Condition` 对象提供了以下主要的方法：
+- `wait()`: 使线程等待，直到被通知或直到达到可选的超时。
+- `notify(n=1)`: 唤醒一个正在等待该 `Condition` 的线程。`n` 参数可以指定要唤醒的线程数。
+- `notify_all()`: 唤醒所有正在等待此 `Condition` 的线程。
+- `acquire()`: 获取与此 `Condition` 关联的底层锁。
+- `release()`: 释放与此 `Condition` 关联的底层锁。
+
+1. 生产者消费者问题
+
+如上面所示，生产者生产物品并添加到共享资源中，消费者从中获取并消费物品。
+
+```python
+import threading
+import time
+import random
+
+class SharedResource:
+    def __init__(self):
+        self.items = []
+        self.condition = threading.Condition()
+
+    def produce(self):
+        with self.condition:
+            item = random.randint(0, 100)
+            print(f"Producing {item}")
+            self.items.append(item)
+            self.condition.notify()  # 通知消费者一个新物品已经生产
+
+    def consume(self):
+        with self.condition:
+            while not self.items:
+                self.condition.wait()  # 如果没有物品，则等待
+            item = self.items.pop(0)
+            print(f"Consuming {item}")
+
+resource = SharedResource()
+producer = threading.Thread(target=resource.produce)
+consumer = threading.Thread(target=resource.consume)
+
+producer.start()
+time.sleep(0.5)
+consumer.start()
+
+producer.join()
+consumer.join()
+```
+
+2. 等待特定条件
+
+在这个示例中，我们等待列表的长度达到特定的阈值后再进行处理。
+
+```python
+import threading
+import time
+
+class ThresholdResource:
+    def __init__(self):
+        self.data = []
+        self.condition = threading.Condition()
+        self.THRESHOLD = 5
+
+    def add_data(self, item):
+        with self.condition:
+            self.data.append(item)
+            if len(self.data) == self.THRESHOLD:
+                self.condition.notify()
+
+    def process_data(self):
+        with self.condition:
+            while len(self.data) < self.THRESHOLD:
+                self.condition.wait()
+            print(f"Processing data: {self.data}")
+            self.data.clear()
+
+resource = ThresholdResource()
+adder = threading.Thread(target=lambda: [resource.add_data(i) for i in range(5)])
+processor = threading.Thread(target=resource.process_data)
+
+adder.start()
+processor.start()
+
+adder.join()
+processor.join()
+```
+
+3. 通知机制
+
+这是一个简单的示例，其中线程A等待线程B完成特定任务后再继续执行。
+
+```python
+import threading
+import time
+
+class NotifierResource:
+    def __init__(self):
+        self.task_done = False
+        self.condition = threading.Condition()
+
+    def task_a(self):
+        with self.condition:
+            while not self.task_done:
+                self.condition.wait()
+            print("Task A continues after Task B is done.")
+
+    def task_b(self):
+        time.sleep(2)
+        with self.condition:
+            print("Task B is done.")
+            self.task_done = True
+            self.condition.notify()
+
+resource = NotifierResource()
+task_a_thread = threading.Thread(target=resource.task_a)
+task_b_thread = threading.Thread(target=resource.task_b)
+
+task_a_thread.start()
+task_b_thread.start()
+
+task_a_thread.join()
+task_b_thread.join()
+```
+
+这三个示例展示了 `Condition` 的不同使用情况，并体现了它如何为线程间提供有条件的同步。
+
+##### 11.5 concurrent线程池编码
+
+###### executor
+
+1. 创建线程池：使用 `ThreadPoolExecutor` 类，通常我们使用它作为一个上下文管理器来确保所有的线程都能完成并释放资源。
+
+```python
+from concurrent.futures import ThreadPoolExecutor
+with ThreadPoolExecutor(max_workers=5) as executor:
+    ...
+```
+
+其中 `max_workers` 是池中最大线程数。
+
+2. 提交任务：使用 `submit` 方法提交一个函数及其参数进行异步执行。该方法会返回一个 `Future` 对象，代表异步执行的任务。
+
+```python
+future = executor.submit(function_name, arg1, arg2, ...)
+```
+
+3. 获取结果：可以使用 `Future` 对象的 `result()` 方法来获取任务的结果。如果任务尚未完成，该方法将阻塞，直到有结果为止。
+
+```python
+result = future.result()
+```
+
+4. 并行地映射输入到函数：`map` 方法可以让你并行地把一个函数应用到多个输入上。
+
+```python
+results = list(executor.map(function_name, iterable_of_inputs))
+```
+
+5. 关闭线程池：如果不使用上下文管理器，记得在完成后调用 `shutdown()` 方法来确保所有线程都完成并关闭线程池。
+
+日常开发场景简化的 `ThreadPoolExecutor` 使用示例：
+
+1. 并行API请求：
+```python
+import requests
+from concurrent.futures import ThreadPoolExecutor
+
+endpoints = ["http://api1.com/data", "http://api2.com/data", "http://api3.com/data"]
+
+def fetch_data(url):
+    response = requests.get(url)
+    return response.json()
+
+with ThreadPoolExecutor(max_workers=3) as executor:
+    results = list(executor.map(fetch_data, endpoints))
+```
+
+2. 数据处理：
+```python
+data_list = [range(10000), range(10000, 20000), range(20000, 30000)]
+
+def process_data(data):
+    return sum(data)
+
+with ThreadPoolExecutor(max_workers=3) as executor:
+    results = list(executor.map(process_data, data_list))
+```
+
+3. Web爬虫：
+```python
+import requests
+from concurrent.futures import ThreadPoolExecutor
+
+urls = ["http://example1.com", "http://example2.com", "http://example3.com"]
+
+def crawl(url):
+    response = requests.get(url)
+    return response.text
+
+with ThreadPoolExecutor(max_workers=3) as executor:
+    web_contents = list(executor.map(crawl, urls))
+```
+
+4. 后台任务：
+```python
+from concurrent.futures import ThreadPoolExecutor
+
+def send_email(email_id):
+    # Logic to send email
+    pass
+
+def generate_report(user_id):
+    # Logic to generate report
+    pass
+
+tasks = [send_email, generate_report]
+
+with ThreadPoolExecutor(max_workers=2) as executor:
+    executor.map(lambda fn: fn(), tasks)
+```
+
+5. 文件I/O：
+```python
+filenames = ["file1.txt", "file2.txt", "file3.txt"]
+
+def read_file(filename):
+    with open(filename, 'r') as f:
+        return f.read()
+
+with ThreadPoolExecutor(max_workers=3) as executor:
+    file_contents = list(executor.map(read_file, filenames))
+```
+
+6. 监控和日志：
+```python
+resources = ["server1", "server2", "server3"]
+
+def check_status(resource):
+    # Logic to check status
+    return f"{resource} is up"
+
+with ThreadPoolExecutor(max_workers=3) as executor:
+    statuses = list(executor.map(check_status, resources))
+```
+
+7. 数据库操作：
+```python
+# Assuming a simplified DB connection and query logic
+queries = ["SELECT * FROM table1", "SELECT * FROM table2", "SELECT * FROM table3"]
+
+def execute_query(query):
+    connection = create_db_connection()
+    result = connection.execute(query)
+    return result.fetchall()
+
+with ThreadPoolExecutor(max_workers=3) as executor:
+    db_results = list(executor.map(execute_query, queries))
+```
+
+以上都是简化的示例，旨在展示如何在各种场景中使用 `ThreadPoolExecutor`。在实际应用中，你可能还需要处理更多的逻辑和错误处理。
+
+###### Future
+
+`Future` 对象是 Python 中用于表示异步执行的计算的结果。它表示还未完成但预期会完成的计算。这样的计算通常是并发执行的，并且结果会在未来的某个时间点可用。
+
+`Future` 的核心作用和特点包括：
+
+1. 表示异步计算：当你提交一个任务到 `ThreadPoolExecutor` 或 `ProcessPoolExecutor` 中执行时，这些执行器会立即返回一个 `Future` 对象。这个对象代表了你提交的任务。
+
+2. 查询状态：可以使用 `Future` 对象的方法来查询任务的状态，例如 `done()` 方法可以检查任务是否完成。
+
+3. 获取结果：当任务完成后，可以使用 `Future` 对象的 `result()` 方法来获取任务的结果。如果任务还没有完成，`result()` 默认会阻塞直到结果可用。你也可以为 `result()` 设置一个超时时间。
+
+4. 添加回调：你可以为 `Future` 对象添加回调函数，当任务完成时，这个回调函数会被调用。
+
+5. 异常处理：如果任务中引发了异常，那么当你调用 `Future` 对象的 `result()` 方法时，这个异常会被重新引发。你还可以使用 `exception()` 方法来获取任务中的异常，而不是获取结果。
+
+6. 取消任务：在任务开始执行之前，你可以使用 `Future` 对象的 `cancel()` 方法来尝试取消任务。如果任务已经开始执行，那么取消操作会失败。
+
+简单的示例：
+```python
+from concurrent.futures import ThreadPoolExecutor
+import time
+def square(n):
+    time.sleep(2)
+    return n * n
+
+
+with ThreadPoolExecutor() as executor:
+    future = executor.submit(square, 5)
+    
+    if not future.done():
+        print("task is doing")
+    res = future.result()
+    print(f"Res : {res}")
+```
+
+在这个例子中，`submit` 方法提交了一个计算平方的任务，并返回了一个 `Future` 对象。我们可以使用这个对象来查询任务状态和获取任务结果。
+
+###### Map用法
+
+`map()` 是 Python 的一个内置函数，用于将一个函数应用于一个或多个可迭代对象中的所有项。结果返回为一个 `map` 对象，它本身是一个迭代器。以下是 `map()` 的一些基础和高级用法：
+
+基础用法
+
+1. 单个可迭代对象：
+```python
+def square(x):
+    return x * x
+
+numbers = [1, 2, 3, 4, 5]
+squared_numbers = map(square, numbers)
+print(list(squared_numbers))  # 输出：[1, 4, 9, 16, 25]
+```
+
+2. 多个可迭代对象：
+```python
+def add(x, y):
+    return x + y
+
+list1 = [1, 2, 3]
+list2 = [4, 5, 6]
+result = map(add, list1, list2)
+print(list(result))  # 输出：[5, 7, 9]
+```
+
+使用 Lambda 函数
+
+`map()` 经常与匿名函数（即 lambda 函数）一起使用，使代码更简洁：
+```python
+numbers = [1, 2, 3, 4, 5]
+squared_numbers = map(lambda x: x * x, numbers)
+print(list(squared_numbers))  # 输出：[1, 4, 9, 16, 25]
+```
+
+使用多个可迭代对象和 Lambda 函数：
+
+```python
+list1 = [1, 2, 3]
+list2 = [4, 5, 6]
+result = map(lambda x, y: x + y, list1, list2)
+print(list(result))  # 输出：[5, 7, 9]
+```
+
+注意事项：
+
+1. `map()` 返回的是一个 `map` 对象，它是一个迭代器。要获取列表形式的结果，你需要使用 `list()` 函数转换它。
+2. 所传递的函数应该接收与传递的可迭代对象数目相同的参数。例如，在上面的例子中，`add` 函数接收两个参数，因此我们传递了两个列表给 `map()`。
+
+`map()` 是 Python 中处理列表（或其他可迭代对象）的一种非常高效和 Pythonic 的方式，特别是当你需要对数据进行某种转换或操作时。
+
+##### 11.6 多进程编程-multiprocessing
+
+`multiprocessing` 是 Python 的一个标准库模块，它允许并发地执行进程，提供了本地和远程并发的功能，使用子进程而不是线程，从而克服了 GIL（全局解释器锁）的限制。这意味着 `multiprocessing` 模块允许您充分利用多核处理器。
+
+**基本用法**
+
+1. 创建并启动进程：
+
+```python
+from multiprocessing import Process
+
+def print_hello():
+    print("Hello from process!")
+
+if __name__ == "__main__":
+    process = Process(target=print_hello)
+    process.start()
+    process.join()
+```
+
+2. 传递参数：
+
+```python
+from multiprocessing import Process
+
+def show_number(num):
+    print(f"Number: {num}")
+
+if __name__ == "__main__":
+    process = Process(target=show_number, args=(5,))
+    process.start()
+    process.join()
+```
+
+**进阶用法**
+
+1. 使用 Pool：允许并行执行多个进程。特别适用于数据密集型任务。
+
+```python
+from multiprocessing import Pool
+
+def square(n):
+    return n * n
+
+if __name__ == "__main__":
+    data = [1, 2, 3, 4, 5]
+    with Pool() as pool:
+        results = pool.map(square, data)
+        print(results)
+```
+
+2. 进程间通信：使用 `Queue` 或 `Pipe`。
+
+```python
+from multiprocessing import Process, Queue
+
+def worker(queue):
+    queue.put("Data from worker process")
+
+if __name__ == "__main__":
+    queue = Queue()
+    process = Process(target=worker, args=(queue,))
+    process.start()
+    process.join()
+    
+    data = queue.get()
+    print(data)
+```
+
+**常用的应用场景的** `multiprocessing` **示例**
+
+1. 数据处理：
+
+假设我们要计算一个大列表中每个数字的平方。
+
+```python
+from multiprocessing import Pool
+
+def square(x):
+    return x * x
+
+data = list(range(10000))
+
+if __name__ == "__main__":
+    with Pool(processes=4) as pool:
+        results = pool.map(square, data)
+    print(results[:10])  # 打印前10个结果
+```
+
+2. Web爬虫：
+
+假设我们要从三个不同的网站获取内容。
+
+```python
+import requests
+from multiprocessing import Pool
+
+def fetch_content(url):
+    response = requests.get(url)
+    return response.text
+
+urls = ["http://example.com", "http://example.org", "http://example.net"]
+
+if __name__ == "__main__":
+    with Pool(processes=3) as pool:
+        contents = pool.map(fetch_content, urls)
+    for content in contents:
+        print(len(content))
+```
+
+3. 并行API请求：
+
+和上面的爬虫类似，只不过是请求API。
+
+4. 图像/视频处理：
+
+假设我们要为一个目录下的所有图像进行大小调整。
+
+```python
+from PIL import Image
+import os
+from multiprocessing import Pool
+
+def resize_image(image_path):
+    with Image.open(image_path) as img:
+        img = img.resize((800, 600))
+        img.save(image_path)
+    return f"Resized {image_path}"
+
+image_paths = ["path/to/image1.jpg", "path/to/image2.jpg"]  # 示例路径
+
+if __name__ == "__main__":
+    with Pool(processes=4) as pool:
+        results = pool.map(resize_image, image_paths)
+    for result in results:
+        print(result)
+```
+
+5. 模拟/仿真：
+
+假设我们要模拟抛硬币的过程。
+
+```python
+import random
+from multiprocessing import Pool
+
+def simulate_coin_tosses(n):
+    return sum(random.choice([0, 1]) for _ in range(n))
+
+total_tosses = 1000000
+num_processes = 4
+tosses_per_process = total_tosses // num_processes
+
+if __name__ == "__main__":
+    with Pool(processes=num_processes) as pool:
+        results = pool.map(simulate_coin_tosses, [tosses_per_process]*num_processes)
+    print(sum(results))
+```
+
+6. 批处理任务：
+
+假设我们有一个任务列表，每个任务都需要执行一段时间。
+
+```python
+import time
+from multiprocessing import Pool
+
+def task(duration):
+    time.sleep(duration)
+    return f"Completed task in {duration} seconds"
+
+tasks = [2, 3, 4, 5]
+
+if __name__ == "__main__":
+    with Pool(processes=4) as pool:
+        results = pool.map(task, tasks)
+    for result in results:
+        print(result)
+```
+
+##### 11.7 进程间通信
