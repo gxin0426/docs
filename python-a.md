@@ -4041,3 +4041,751 @@ if __name__ == "__main__":
 ```
 
 ##### 11.7 进程间通信
+
+好的，我会为您提供更详细的解释和示例。
+
+1. ###### Queue
+
+`Queue` 是一种先进先出 (FIFO) 的数据结构，允许多个进程放入和取出对象。
+
+```python
+from multiprocessing import Process, Queue
+
+def put_data(q):
+    for i in range(5):
+        q.put(i)
+        print(f"Put {i} into queue")
+
+def get_data(q):
+    for _ in range(5):
+        data = q.get()
+        print(f"Got {data} from queue")
+
+if __name__ == "__main__":
+    q = Queue()
+
+    producer = Process(target=put_data, args=(q,))
+    consumer = Process(target=get_data, args=(q,))
+
+    producer.start()
+    producer.join()
+
+    consumer.start()
+    consumer.join()
+```
+
+在多进程的生产者-消费者模型中，Queue 用于传递任务或消息。
+
+###### 2. Pipe
+
+`Pipe` 提供了一种在两个进程间进行双向通信的方法。
+
+```python
+from multiprocessing import Process, Pipe
+
+def send_data(conn):
+    for i in ["data1", "data2", "data3"]:
+        conn.send(i)
+        print(f"Sent {i}")
+
+def receive_data(conn):
+    for _ in range(3):
+        data = conn.recv()
+        print(f"Received {data}")
+
+if __name__ == "__main__":
+    parent_conn, child_conn = Pipe()
+
+    sender = Process(target=send_data, args=(child_conn,))
+    receiver = Process(target=receive_data, args=(parent_conn,))
+
+    sender.start()
+    sender.join()
+
+    receiver.start()
+    receiver.join()
+```
+
+当需要双向数据传输时，Pipe 很有用，如电话对话。
+
+###### 3. Manager
+
+`Manager` 提供了在多个进程之间共享数据的方法。
+
+```python
+from multiprocessing import Process, Manager
+
+def modify_data(d, l):
+    d['name'] = 'Alice'
+    l.append(10)
+
+if __name__ == "__main__":
+    with Manager() as manager:
+        shared_dict = manager.dict()
+        shared_list = manager.list([1,2,3,4,5])
+
+        p = Process(target=modify_data, args=(shared_dict, shared_list))
+        p.start()
+        p.join()
+
+        print(shared_dict)   # 输出: {'name': 'Alice'}
+        print(shared_list)   # 输出: [1, 2, 3, 4, 5, 10]
+当多个进程需要访问同一个数据结构时，例如，在一个进程中修改数据结构，而其他进程读取它。
+```
+
+如果只是简单的数据传递，`Queue` 和 `Pipe` 是非常方便的。但是，当需要在多个进程之间共享复杂的数据结构或状态时，`Manager` 更为适合。
+
+### 第十二章 协程和异步IO
+
+###### 12.1 并发、并行、同步、异步、阻塞、非阻塞
+
+1. 并发 (Concurrency)
+
+并发是同时处理多个任务的能力，但这并不意味着所有任务都在同一时刻执行。例如，一个多任务操作系统可能只有一个CPU，但它能够并发地运行多个进程，因为它能在不同的进程间快速切换
+
+```python
+import time
+import threading
+
+def task_1():
+    time.sleep(1)
+    print("Task 1 completed")
+
+def task_2():
+    time.sleep(1)
+    print("Task 2 completed")
+
+# 使用 threading 实现并发
+t1 = threading.Thread(target=task_1)
+t2 = threading.Thread(target=task_2)
+
+t1.start()
+t2.start()
+
+t1.join()
+t2.join()
+```
+
+2. 并行 (Parallelism)
+
+并行意味着多个任务在同一时刻执行。这通常需要多个处理器核心。例如，一个多核的CPU可以同时运行多个线程，这样每个线程都在自己的核上运行
+
+```python
+from multiprocessing import Process
+
+# 与上面的并发示例类似，但使用 Process 实现并行
+p1 = Process(target=task_1)
+p2 = Process(target=task_2)
+
+p1.start()
+p2.start()
+
+p1.join()
+p2.join()
+```
+
+3. 同步 (Synchronous)
+
+同步操作是连续的，必须等待一个操作完成后才能开始下一个操作。例如，一个同步的文件读取会阻塞程序，直到整个文件被读取
+
+```python
+def synchronous_task():
+    print("Start task")
+    time.sleep(2)  # 模拟耗时操作
+    print("End task")
+
+synchronous_task()
+synchronous_task()
+```
+
+4. 异步 (Asynchronous)
+
+异步操作允许开始一个操作，然后在其完成之前进行其他操作。例如，异步的文件读取会在读取文件的同时，允许程序执行其他任务。当文件读取完成时，通常会通过回调或事件来通知程序。
+
+```python
+import asyncio
+
+async def asynchronous_task():
+    print("Start task")
+    await asyncio.sleep(2)
+    print("End task")
+
+asyncio.run(asynchronous_task())
+```
+
+5. 阻塞 (Blocking)
+
+当操作挂起调用者，直到某些条件得到满足时，该操作被称为阻塞。例如，`input()` 和 `socket.recv()` 都是阻塞的。当调用一个阻塞的系统调用（如文件读取）时，调用者必须等待操作完成。
+
+```python
+print("Please enter something:")
+data = input()  # 阻塞直到用户输入
+print(f"You entered: {data}")
+```
+
+6. 非阻塞 (Non-blocking)
+
+非阻塞操作会立即返回，而不等待操作完成。例如，在非阻塞模式下尝试从套接字读取数据：如果没有数据可用，它不会等待数据，而是直接返回。
+
+```python
+import socket
+
+s = socket.socket()
+s.setblocking(0)
+
+try:
+    data = s.recv(1024)
+except BlockingIOError:
+    print("No data available yet.")
+```
+
+**同步和阻塞得区别**
+
+同步和阻塞是两个经常被一起使用的术语，但它们描述的是不同的概念。尽管它们在某些上下文中可能看起来相似，但了解它们的不同之处可以帮助更清晰地理解并发和并行编程的各种概念。
+
+1. 同步 (Synchronous)
+   - 当我们说一个操作是同步的，意思是在该操作完成之前，执行流程会被“暂停”，等待这个操作完成。一旦操作完成，执行流程将继续。
+   - 例如，在读取文件或请求数据时，如果使用的是同步方法，程序会等待数据读取完毕或请求完成后再继续执行后面的代码。
+   - 同步通常意味着在一个时间点只有一件事情在发生。
+
+2. 阻塞 (Blocking)
+   - 当我们说一个操作或线程被阻塞，意思是它正在等待某些条件得到满足才能继续执行。这个等待期间，它不能进行任何其他操作。例如，当一个线程尝试获取一个已经被另一个线程锁定的锁时，它会被阻塞，直到这个锁变得可用。
+   
+      - 阻塞通常与资源或条件的等待有关，它导致程序或线程暂停执行，直到某个特定条件得到满足。
+   
+
+相似之处：
+两者都会导致程序或线程的执行暂停。在同步操作期间，我们通常也会看到阻塞的行为，因为程序等待同步操作完成。
+
+不同之处：
+- 同步和异步描述的是程序的执行顺序或流程。同步意味着按顺序执行，每个操作必须在下一个操作开始之前完成。异步则意味着不必等待当前操作完成，可以继续执行其他操作。
+- 阻塞和非阻塞描述的是程序在等待某个条件时的状态。阻塞意味着程序在等待某个条件满足时被挂起，无法进行其他操作；非阻塞则意味着即使在等待某个条件时，程序仍然可以执行其他操作。
+
+考虑一个电话的例子：
+
+- 同步通话：当你打电话给某人并等待他接电话，直到他回应，这是同步的，因为你在等待响应。
+- 阻塞通话：如果你打电话并等待对方接听，期间你不能做其他任何事情（例如，你不能同时打另一个电话），这是阻塞的。
+
+##### 12.2 C10K问题和IO多路复用(select、poll、epoll)
+
+###### 五种UNIX IO模型
+
+1. 阻塞I/O (Blocking I/O)
+   - 当应用程序执行一个I/O操作时，如`read()`，它将被阻塞，直到操作完成并返回。在此期间，应用程序无法执行其他操作。
+   
+2. 非阻塞I/O (Non-blocking I/O)
+   - 当应用程序请求一个I/O操作时，如果数据尚未准备好，该调用将立即返回一个错误，而不是等待数据。
+   - 为了获取数据，应用程序可能需要多次尝试或轮询。
+
+3. I/O多路复用 (I/O Multiplexing)
+   - 使用如`select()`或`poll()`等系统调用来同时监视多个文件描述符以检查其是否就绪（可读、可写或异常）。
+   - 当其中一个或多个文件描述符就绪时，系统调用返回，使应用程序可以执行I/O操作。
+   - 这种方式允许单一进程或线程管理多个I/O操作，但它在处理大量连接时可能不够高效。
+
+4. 信号驱动I/O (Signal-driven I/O)
+   - 应用程序通过`sigaction()`系统调用为一个文件描述符设置一个信号处理函数。
+   - 当数据准备好并且可以进行I/O操作时，应用程序将收到一个信号。
+   - 在收到信号后，应用程序可以启动非阻塞的I/O操作来读取或写入数据。
+
+5. 异步I/O (Asynchronous I/O or POSIX aio_系列函数)
+   - 应用程序启动一个I/O操作，并立即返回进行其他任务。
+   - 当I/O操作完成时，应用程序会收到通知。
+   - 与信号驱动I/O不同，异步I/O确保操作（如读取或写入）确实完成了，而不仅仅是数据已经准备好了。
+
+好的，让我更深入地解释 `select`, `poll`, 和 `epoll` 的工作机制和如何使用它们。
+
+###### 多路复用
+
+1. `select` 是最早的 I/O 多路复用解决方案，支持跨平台。
+
+- `select` 函数监控一组文件描述符的读、写和异常事件。
+- 当你调用 `select` 函数时，它会阻塞，直到以下条件之一得到满足：
+  - 监控的文件描述符之一发生了指定的事件；
+  - 函数调用超时。
+
+```c
+#include <sys/select.h>
+//这里定义了一个类型为fd_set的变量readfds。fd_set是一个文件描述符集合，用于存储和检查一组文件描述符的状态
+fd_set readfds;
+//定义了一个类型为struct timeval的变量timeout。struct timeval用于指定select函数的超时时间
+struct timeval timeout;
+
+FD_ZERO(&readfds);  // 清除文件描述符集合
+FD_SET(fd, &readfds);  // 将文件描述符 fd 添加到集合
+
+timeout.tv_sec = 5;  // 设置超时为 5 秒
+
+int ret = select(fd+1, &readfds, NULL, NULL, &timeout);
+```
+
+- `FD_ZERO` 清除一个文件描述符集合。
+- `FD_SET` 将一个文件描述符添加到集合中。
+
+优缺点：
+
+- 优点：简单，兼容性好。
+- 缺点：效率不高；文件描述符数量受限；每次调用时都需要重置文件描述符集和时间结构。
+
+2. `poll` 是 `select` 的改进，没有文件描述符数量限制。
+
+- `poll` 通过一个 `pollfd` 的数组来监控多个文件描述符。
+- 和 `select` 类似，`poll` 也会阻塞直到监控的文件描述符之一发生了指定的事件或函数调用超时。
+
+```c
+#include <poll.h>
+//定义了一个 struct pollfd 类型的数组 fds，包含两个元素。struct pollfd 是一个结构体，用于存储文件描述符及我们对其状态感兴趣的事件（如：可读、可写等）
+struct pollfd fds[2];
+//数组 fds 的第一个元素的 fd 成员赋值，设置为 fd1。fd1 是我们要监视的第一个文件描述符
+fds[0].fd = fd1;
+//这一行为数组 fds 的第一个元素的 events 成员赋值，设置为 POLLIN。POLLIN 是一个常量，表示我们对文件描述符 fd1 的可读事件感兴趣
+fds[0].events = POLLIN;
+
+fds[1].fd = fd2;
+fds[1].events = POLLIN;
+//5000：指定超时时间，单位是毫秒。poll 函数会等待指定的时间，如果在这段时间内没有文件描述符就绪，poll 就会超时返回
+//返回值 ret 是一个整数，表示有多少个文件描述符状态发生了变化（就绪）。如果超时，ret 会返回 0，如果有错误发生，ret 会返回 -1
+int ret = poll(fds, 2, 5000);  // 5000 毫秒超时
+```
+
+- `pollfd` 结构包含文件描述符和待监控的事件。
+
+- 优点：没有文件描述符数量限制。
+- 缺点：仍然需要线性扫描文件描述符。
+
+3. `epoll` 是 Linux 特有的，效率更高，适用于大量文件描述符的场景。
+
+- `epoll` 使用事件驱动方式，只返回发生事件的文件描述符。
+- `epoll` 可以在每个文件描述符上设置不同的事件处理方式。
+
+```c
+#include <sys/epoll.h>
+//创建了一个 epoll 实例，并返回一个文件描述符 epfd 用于后续的 epoll 操作。0 参数意味着没有特别的选项被设置
+int epfd = epoll_create1(0);
+
+struct epoll_event event;
+event.events = EPOLLIN;
+event.data.fd = fd;
+
+//将文件描述符 fd 和对应的事件 event 注册到 epoll 实例 epfd。EPOLL_CTL_ADD 是一个操作常量，表示我们要添加一个新的文件描述符到 epoll 实例
+epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event);
+//定义了一个 struct epoll_event 类型的数组 events，用于存储 epoll_wait 返回的就绪事件。MAX_EVENTS 是数组的大小，也就是我们准备处理的最大就绪事件数量。
+struct epoll_event events[MAX_EVENTS];
+int ret = epoll_wait(epfd, events, MAX_EVENTS, 5000);  // 5000 毫秒超时
+```
+
+- `epoll_create1` 创建一个 epoll 实例。
+- `epoll_ctl` 添加、删除或修改监控的文件描述符和事件。
+- `epoll_wait` 等待事件的发生。
+
+- 优点：效率高；可以处理大量文件描述符。
+
+- 对于少量并且活跃的文件描述符，`select` 和 `poll` 是可以的。
+- 对于大量文件描述符，特别是并不都很活跃的，`epoll` 更有优势。
+
+###### TCP服务器
+
+当然，这里我会为您提供一个简单的 TCP 服务器的示例，该服务器将使用 `select`, `poll`, 和 `epoll` 来处理客户端连接。
+
+ `select`
+
+这个示例是一个 TCP 服务器，它使用 `select` 来同时处理多个客户端连接。
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define MAX_CLIENTS 1024
+#define BUFFER_SIZE 1024
+
+int main() {
+    int server_fd, client_fd;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t client_len = sizeof(client_addr);
+    fd_set master_fds, read_fds;
+    int max_fd;
+    char buffer[BUFFER_SIZE];
+    
+    // 创建并配置服务器 socket
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(8080);
+    bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
+    listen(server_fd, 5);
+    
+    // 初始化 fd_set
+    FD_ZERO(&master_fds);
+    FD_SET(server_fd, &master_fds);
+    max_fd = server_fd;
+    
+    while (1) {
+        read_fds = master_fds;
+        select(max_fd + 1, &read_fds, NULL, NULL, NULL);
+        
+        for (int i = 0; i <= max_fd; i++) {
+            if (FD_ISSET(i, &read_fds)) {
+                if (i == server_fd) {
+                    // 接受新的客户端连接
+                    client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
+                    FD_SET(client_fd, &master_fds);
+                    max_fd = (client_fd > max_fd) ? client_fd : max_fd;
+                } else {
+                    // 处理客户端消息
+                    int bytes_received = recv(i, buffer, BUFFER_SIZE, 0);
+                    if (bytes_received <= 0) {
+                        close(i);
+                        FD_CLR(i, &master_fds);
+                    } else {
+                        send(i, buffer, bytes_received, 0);
+                    }
+                }
+            }
+        }
+    }
+    
+    close(server_fd);
+    return 0;
+}
+```
+
+ `poll`
+
+这个示例也是一个 TCP 服务器，它使用 `poll` 来同时处理多个客户端连接。
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <poll.h>
+
+#define MAX_CLIENTS 1024
+#define BUFFER_SIZE 1024
+
+int main() {
+    int server_fd, client_fd;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t client_len = sizeof(client_addr);
+    struct pollfd fds[MAX_CLIENTS];
+    int nfds = 1;
+    char buffer[BUFFER_SIZE];
+
+    // 创建并配置服务器 socket
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(8080);
+    bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
+    listen(server_fd, 5);
+
+    fds[0].fd = server_fd;
+    fds[0].events = POLLIN;
+
+    while (1) {
+        int ret = poll(fds, nfds, -1);
+
+        for (int i = 0; i < nfds; i++) {
+            if (fds[i].revents & POLLIN) {
+                if (fds[i].fd == server_fd) {
+                    // 接受新的客户端连接
+                    client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
+                    fds[nfds].fd = client_fd;
+                    fds[nfds].events = POLLIN;
+                    nfds++;
+                } else {
+                    // 处理客户端消息
+                    int bytes_received = recv(fds[i].fd, buffer, BUFFER_SIZE, 0);
+                    if (bytes_received <= 0) {
+                        close(fds[i].fd);
+                        fds[i] = fds[--nfds];
+                        i--;
+                    } else {
+                        send(fds[i].fd, buffer, bytes_received, 0);
+                    }
+                }
+            }
+        }
+    }
+
+    close(server_fd);
+    return 0;
+}
+```
+
+ `epoll`
+
+这个示例是一个使用 `epoll` 的 TCP 服务器。
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/epoll.h>
+
+#define MAX_EVENTS 1024
+#define BUFFER_SIZE 1024
+
+int main() {
+    int server_fd, client_fd;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t client_len = sizeof(client_addr);
+    int epoll_fd;
+    struct epoll_event event, events[MAX_EVENTS];
+    char buffer[BUFFER_SIZE];
+
+    // 创建并配置服务器 socket
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY
+
+;
+    server_addr.sin_port = htons(8080);
+    bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
+    listen(server_fd, 5);
+
+    // 创建 epoll 实例
+    epoll_fd = epoll_create1(0);
+    
+    event.events = EPOLLIN;
+    event.data.fd = server_fd;
+    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &event);
+    
+    while (1) {
+        int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+        
+        for (int i = 0; i < n; i++) {
+            if (events[i].data.fd == server_fd) {
+                // 接受新的客户端连接
+                client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
+                event.events = EPOLLIN;
+                event.data.fd = client_fd;
+                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event);
+            } else {
+                // 处理客户端消息
+                int bytes_received = recv(events[i].data.fd, buffer, BUFFER_SIZE, 0);
+                if (bytes_received <= 0) {
+                    close(events[i].data.fd);
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
+                } else {
+                    send(events[i].data.fd, buffer, bytes_received, 0);
+                }
+            }
+        }
+    }
+    
+    close(server_fd);
+    close(epoll_fd);
+    return 0;
+}
+```
+
+在以上的示例中，服务器会监听8080端口，并接受客户端的连接。当接收到客户端发送的消息时，服务器会将相同的消息回发给客户端。每个示例都在一个无限循环中运行，可处理多个客户端的连接和消息。注意在真实的应用场景中，需要添加更多的错误处理代码。
+
+##### 12.3 epoll+回调+事件循环方式url
+
+```python
+import socket 
+from urllib.parse import urlparse
+from selectors import DefaultSelector, EVENT_READ, EVENT_WRITE
+
+
+myselector = DefaultSelector()
+urls = []
+stop = False
+
+class Fetcher:
+    def connected(self, key):
+        myselector.unregister(key.fd)
+        self.client.send("GET {} HTTP/1.1\r\nHost:{}\r\nConnection:close\r\n\r\n".format(self.path, self.host).encode("utf8"))
+        myselector.register(self.client.fileno(), EVENT_READ, self.readable)
+        
+        
+    def readable(self, key):
+        d = self.client.recv(1024)
+        if d:
+            self.data += d
+        else:
+            myselector.unregister(key.fd)
+            data = self.data.decode("utf8")
+            html_data = data.split("\r\n\r\n")[1]
+            print(html_data)
+            self.client.close()
+            urls.remove(self.spider_url)
+            if not urls:
+                global stop 
+                stop = True
+                
+    def get_url(self, url):
+        self.spider_url = url
+        
+        url = urlparse(url)
+        self.host = url.netloc
+        self.path = url.path
+        self.data = b""
+        if self.path == "":
+            self.path = "/"
+            
+        self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client.setblocking(False)
+        
+        try:
+            self.client.connect((self.host, 80))
+        except BlockingIOError as e:
+            pass
+        
+        myselector.register(self.client.fileno(), EVENT_WRITE, self.connected)
+        
+def loop():
+    while not stop:
+        ready = myselector.select()
+        for key, mask in ready:
+            call_back = key.data
+            call_back(key)
+
+            
+import time 
+start = time.time()
+for url in range(10):
+    url = "http://shop.projectsedu.com/goods/{}/".format(url)
+    urls.append(url)
+    fetech = Fetcher()
+    fetech.get_url(url)
+loop()
+print(time.time() - start)
+```
+
+##### 12.4 生成器的send和yield from
+
+好的，我们来谈谈Python中的生成器、`send`方法和`yield from`。
+
+1. 生成器 (Generators)
+
+生成器是一种特殊类型的迭代器。你可以使用函数来定义它，但不同于使用`return`返回值，你会使用`yield`来产生一系列的值。
+
+```python
+def simple_generator():
+    yield 1
+    yield 2
+    yield 3
+
+gen = simple_generator()
+print(next(gen))  # 输出：1
+print(next(gen))  # 输出：2
+print(next(gen))  # 输出：3
+```
+
+2. `send` 方法
+
+除了使用`next()`函数从生成器中获取值，你还可以使用`send()`方法向生成器发送一个值。这个值会成为`yield`表达式的结果。
+
+```python
+def echo_generator():
+    while True:
+        received = yield
+        print("Received:", received)
+
+gen = echo_generator()
+next(gen)          # 首次激活生成器
+gen.send("Hello")  # 输出：Received: Hello
+gen.send("World")  # 输出：Received: World
+```
+
+3. `yield from`
+
+`yield from`是Python 3.3及更高版本中的新语法。它允许一个生成器委托部分其操作到另一个生成器。这可以用于分解生成器函数到更小的片段，也支持将任何可迭代的对象当成一个子生成器。
+
+```python
+def gen1():
+    yield 1
+    yield 2
+
+def gen2():
+    yield 3
+    yield 4
+
+def combined_gen():
+    yield from gen1()
+    yield from gen2()
+
+for item in combined_gen():
+    print(item)  # 输出：1 2 3 4
+```
+
+**重点：`yield from`的用法**
+
+`yield from`最常见的用途是在生成器中简化循环的代码。例如，上面的`combined_gen`函数可以用以下方法重写，但是`yield from`使其更加简洁。
+
+```python
+def combined_gen():
+    for item in gen1():
+        yield item
+    for item in gen2():
+        yield item
+```
+
+此外，`yield from`还在协程和异步编程中有重要应用，特别是在早期的`asyncio`模块版本中。它可以用来委托操作到另一个协程，并将结果返回给主协程。
+
+1.  最简单的`yield from`的使用是在一个生成器中产生另一个生成器的值
+
+```python
+def gen1():
+    yield 1
+    yield 2
+
+def gen2():
+    yield 3
+    yield 4
+
+def combined_gen():
+    yield from gen1()
+    yield from gen2()
+
+list(combined_gen())  # [1, 2, 3, 4]
+```
+
+2. 委托产生和传值
+
+当在一个生成器中使用`yield from`另一个生成器时，外部生成器（委托生成器）会暂停，直到内部生成器（子生成器）完成。这期间，子生成器可以产生多个值，而委托生成器则暂时不产生任何值。这就是“委托产生”。
+
+此外，使用`send()`发送到委托生成器的值可以直接传递到子生成器。如果子生成器结束，并提供一个`return`值，那么这个值会作为`yield from`表达式的值。
+
+3. `yield from`与协程
+
+`yield from`的真正威力在于与协程一起使用时。它允许协程暂停并委托其操作到另一个协程。这对于异步编程框架，如`asyncio`，非常有用。
+
+以下是一个简单示例，说明如何使用`yield from`与协程：
+
+```python
+import asyncio
+
+async def compute(x, y):
+    print("Compute %s + %s ..." % (x, y))
+    await asyncio.sleep(1.0)
+    return x + y
+
+async def print_sum(x, y):
+    result = await compute(x, y)
+    print("%s + %s = %s" % (x, y, result))
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(print_sum(1, 2))
+loop.close()
+```
+
+4. 实际应用
+
+1. **重构生成器代码**：您可以将复杂的生成器拆分为多个更小、更易管理的生成器，并使用`yield from`在主生成器中包含它们。
+2. **异步编程**：在`asyncio`等框架中，您可以使用`yield from`（或其现代替代品`await`）来暂停当前协程，并等待另一个协程完成。
+3. **创建生成器管道**：您可以创建一个生成器序列，每个生成器都对其输入数据进行某种形式的处理，并使用`yield from`将数据传递给下一个生成器。
+
+##### 12.5 生成器如何变成协程？
+12.6 async和await原生协程
