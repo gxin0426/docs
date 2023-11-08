@@ -5305,5 +5305,503 @@ loop.close()
            # access shared resource
    ```
 
-以上是`asyncio`的一些核心功能和概念的简要
+### 第十三章 asyncio并发编程
+
+##### 13.1 事件循环
+
+```python
+import asyncio
+import time
+
+async def get_html(url):
+    print("start..")
+    # time.sleep(2)
+    await asyncio.sleep(2)
+    print("end...")
+
+start_time = time.time()
+loop = asyncio.get_event_loop()
+tasks = [get_html("http://www.imooc.com") for i in range(10)]
+loop.run_until_complete(asyncio.wait(tasks))
+print(start_time - time.time())
+```
+
+这两段代码示例展示了在`async`函数中使用阻塞调用（`time.sleep(2)`）与使用异步调用（`await asyncio.sleep(2)`）的差异。
+
+第一段代码使用阻塞调用`time.sleep(2)`:
+
+```python
+async def get_html(url):
+    print("start..")
+    time.sleep(2)  # 阻塞调用
+    print("end...")
+```
+
+当你调用`time.sleep(2)`时，整个当前执行的线程都被挂起了两秒钟，即使这个调用被放置在`async`函数中。由于`asyncio`的事件循环在单线程中运行，这意味着当一个协程在执行`time.sleep(2)`时，整个事件循环都会被阻塞。在这段时间内，没有其他协程能够运行。因此，如果你启动了10个这样的协程作为任务，每个都会依次执行并阻塞事件循环，总共至少花费20秒（2秒×10次）。
+
+第二段代码使用异步调用`await asyncio.sleep(2)`:
+
+```python
+async def get_html(url):
+    print("start..")
+    await asyncio.sleep(2)  # 异步调用
+    print("end...")
+```
+
+这里，`asyncio.sleep(2)`是一个异步等待的调用，它会暂停当前协程的执行并控制权交回事件循环，这允许事件循环在协程等待时管理其他协程。所以当一个协程在`await asyncio.sleep(2)`暂停时，其他协程可以开始或继续执行。这样，这10个任务几乎可以同时启动，并在大约2秒后全部完成。
+
+总结时间差异：
+
+- 第一段代码：由于顺序阻塞，代码至少要执行20秒才能完成所有任务。
+- 第二段代码：由于异步执行，所有任务几乎同时开始，并在大约2秒后完成。
+
+##### 13.3  async中常用方法和属性
+
+###### asyncio中的task和future区别和用法
+
+Future
+
+- `Future`是一个较低级别的可等待对象，表示一个异步操作的最终结果。
+- 它通常由低级别的库代码创建，用于封装非`asyncio`的异步代码（例如，由`ThreadPoolExecutor`返回的）。
+- `Future`对象不必绑定到一个特定的协程，也就是说，它更加通用，可以在不同的异步事件循环实现中使用。
+
+Task
+
+- `Task`是`Future`的一个子类，它更高级别，封装了协程的执行。
+- `Task`对象用于计划协程的执行，当协程启动时，它会自动包装在一个`Task`中。
+- `Task`对象绑定到特定的事件循环，并在协程完成时设置结果。
+
+在日常的`asyncio`编程中，通常会更多地与`Task`打交道，因为它是用于运行协程的主要方式。`Future`在使用自定义事件循环或与其他类型的异步代码集成时可能会更常用。
+
+下面是一个简单的代码示例，展示如何在`asyncio`中使用`Task`和`Future`。
+
+```python
+import asyncio
+
+async def my_coroutine():
+    # 假设这是一个耗时的异步操作
+    await asyncio.sleep(1)
+    return "result"
+
+# Task的用法
+async def main_task():
+    # 创建并运行一个任务
+    task = asyncio.create_task(my_coroutine())
+    # 等待任务完成，并获取结果
+    result = await task
+    print(f"Task result: {result}")
+
+# Future的用法
+async def main_future(loop):
+    # 创建一个Future对象
+    future = loop.create_future()
+
+    # 假设这里我们设置Future的结果是从外部操作中得到的
+    def set_future_result():
+        future.set_result("future result")
+
+    # 模拟外部操作设置结果
+    loop.call_soon(set_future_result)
+
+    # 等待Future完成，并获取结果
+    result = await future
+    print(f"Future result: {result}")
+
+# 运行Task示例
+#asyncio.run(main_task())
+
+# 运行Future示例
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main_future(loop))
+```
+
+在这个例子中，`main_task` 函数展示了如何创建一个`Task`并等待它完成。而`main_future` 函数则展示了如何创建一个`Future`对象，并在某个时刻设置它的结果（这里是通过`call_soon`方法模拟的）。在实际的异步编程中，`Future`的结果可能会由某个异步操作或回调函数设置。
+
+###### asyncio中的 queue和lock用法
+
+在`asyncio`中，`queue`和`lock`用于控制异步程序中的并发访问和数据同步。
+
+**Queue**
+
+`asyncio.Queue`是一个线程安全的队列，适用于从协程中进行先进先出（FIFO）的数据交换。它常用于在生产者和消费者之间传递消息。
+
+下面是一个使用`asyncio.Queue`的示例，展示了生产者-消费者模式。
+
+```python
+import asyncio
+
+async def producer(queue):
+    for i in range(5):
+        await queue.put(f"item {i}")
+        print(f"Produced item {i}")
+    await queue.put(None)  # Indicates the producer is done
+
+async def consumer(queue):
+    while True:
+        item = await queue.get()
+        if item is None:
+            break
+        print(f"Consumed {item}")
+    print("Consumer done")
+
+async def main():
+    queue = asyncio.Queue()
+    # Start the producer and consumer tasks
+    await asyncio.gather(producer(queue), consumer(queue))
+if __name__ == "__main__":
+	asyncio.run(main())
+```
+
+**Lock**
+
+`asyncio.Lock`是一个异步锁，用于保护共享资源，确保同一时间只有一个协程可以访问该资源。这避免了并发访问时可能出现的数据竞争。
+
+下面是一个使用`asyncio.Lock`的示例，确保同一时间只有一个协程可以打印到控制台。
+
+```python
+import asyncio
+
+async def task(lock, id):
+    async with lock:
+        # 只有获得锁的协程才能进入下面的代码段
+        print(f"Task {id} is running")
+        await asyncio.sleep(1)  # Simulate a task taking some time
+    # 锁已释放，其他协程可以获得锁
+
+async def main():
+    lock = asyncio.Lock()
+    # 创建多个任务，它们都会尝试获得同一个锁
+    tasks = [task(lock, i) for i in range(3)]
+    # 在Python中，星号（*）用作参数解包运算符。当用在函数调用的参数前面时，它将可迭代对象（如列表、元组等）中的元素“解包”，作为独立的参数传递给函数
+    await asyncio.gather(*tasks)
+
+asyncio.run(main())
+```
+
+尽管有多个协程几乎同时启动并尝试执行打印操作，但由于它们都试图获取同一个`Lock`，打印操作将按顺序执行。
+
+**高级用法**
+
+`asyncio`中的`Queue`和`Lock`还有一些高级用法，比如`Queue`可以设置最大容量，`Lock`可以与条件变量（`asyncio.Condition`）配合使用以等待特定条件的发生。这些工具的组合使用可以创建复杂的并发控制流程，适用于需要精细控制异步操作顺序和并发的场景。
+
+###### wait 和 gather 的用法
+
+在`asyncio`中，`wait`和`gather`都是用于并发运行多个协程的函数，但它们的行为和用法有一些不同。
+
+**`asyncio.gather()`**
+
+- `gather`用于并发运行多个协程，并且当所有协程完成时返回它们的结果。
+- 它将按照提供协程的顺序返回结果。
+- 如果`gather`中的一个协程抛出异常，那么`gather`会取消其它所有协程并将异常向上抛出，除非`return_exceptions`参数被设置为`True`。
+
+```python
+import asyncio
+
+async def coro(tag):
+    print(f"Start {tag}")
+    await asyncio.sleep(1)  # 模拟IO操作
+    print(f"End {tag}")
+    return f"Result from {tag}"
+
+async def main():
+    #并发运行多个协程
+    res = await asyncio.gather(
+        coro("aaa"),
+        coro("bbb"),
+        coro("ccc")
+        
+    )
+    print(res)
+    print(type(res))
+
+asyncio.run(main_gather())
+```
+
+**`asyncio.wait()`**
+
+- `wait`用于并发运行多个协程，并在给定的条件满足时返回一个包含两个集合的元组：(done, pending)。
+- `done`集合包含已完成的协程的`Future`对象，`pending`集合包含尚未完成的。
+- `wait`允许更精细的控制，可以指定等待的条件（例如，任何协程完成或所有协程完成），并且可以设置超时时间。
+- `wait`是低级API，比`gather`提供了更多控制，但使用起来也更复杂。
+
+```python
+import asyncio
+
+async def main_wait():
+    # 创建多个协程的任务
+    tasks = [asyncio.create_task(coro(f"Task {i}")) for i in range(3)]
+    # 等待直到所有协程完成
+    done, pending = await asyncio.wait(tasks)
+    
+    for task in done:
+        print(task.result())
+
+asyncio.run(main_wait())
+```
+
+- 当你需要所有协程的结果，并且希望它们都成功完成时，使用`gather`。
+- 当你需要对协程完成的时间和行为有更多控制，或者你需要处理协程的完成和未完成状态时，使用`wait`。
+- 通常，如果协程之间相对独立，使用`gather`更加简洁；如果协程之间有复杂的依赖关系，或者你需要在协程完成时立即执行一些操作，那么使用`wait`可能更合适。 
+
+###### 事件循环相关函数
+
+在`asyncio`库中，`run_until_complete()`, `get_event_loop()`, 和 `run_forever()` 是与事件循环操作相关的函数。
+
+**`run_until_complete()`**
+
+- 用于运行传入的协程，直到它完成，并返回协程的结果。
+- 它是`asyncio`旧版本的API，常用于在库或框架代码中集成`asyncio`。
+- 在新的代码中，建议使用**`asyncio.run()`**，因为它更简单，可以自动创建和关闭事件循环。
+
+```python
+import asyncio
+
+async def coro():
+    await asyncio.sleep(1)
+    return "done"
+
+# 获取当前事件循环，如果没有，则创建一个新的
+loop = asyncio.get_event_loop()
+try:
+    # 运行协程直到完成，并获取结果
+    result = loop.run_until_complete(coro())
+    print(result)
+finally:
+    loop.close()  # 关闭事件循环
+```
+
+**`get_event_loop()`**
+
+- 获取当前线程的事件循环。
+- 如果当前线程还没有事件循环，那么会创建一个新的事件循环。
+- 在`asyncio.run()`成为推荐做法之前，这是获取事件循环的标准方式。
+
+```python
+loop = asyncio.get_event_loop()
+# 使用loop做一些操作，如 run_until_complete()
+```
+
+**`run_forever()`**
+
+- 启动事件循环，使其运行直到`stop()`被调用。
+- 常用于需要长时间运行的服务，比如网络服务或是长时间运行的任务。
+- 使用这个函数时，需要自己管理事件循环的启动和关闭。
+
+```python
+import asyncio
+
+async def run_forever_task():
+    try:
+        while True:
+            print("Running...")
+            await asyncio.sleep(1)
+    except asyncio.CancelledError:
+        print("Cancelled task")
+
+loop = asyncio.get_event_loop()
+# 创建一个协程任务，它将一直运行
+task = loop.create_task(run_forever_task())
+try:
+    loop.run_forever()
+except KeyboardInterrupt:
+    # 当按下Ctrl+C时，取消任务并停止事件循环
+    task.cancel()
+    loop.run_until_complete(task)
+finally:
+    loop.close()
+```
+
+- **`asyncio.run()` 是推荐的方式来运行最顶层的入口点协程，并且它在协程完成时会关闭事件循环。它是一个简单且干净的API。**
+- `run_until_complete()` 和 `get_event_loop()` 被用于旧版本的`asyncio`代码中，或在需要更细粒度控制事件循环时使用。
+- `run_forever()` 用于长期运行的服务，它允许事件循环一直运行直到被外部调用`stop()`，通常与`run_until_complete()`配合使用以处理任务结束后的清理工作。
+
+###### call_soon call_later call_at call_soon_threadsafe
+
+在`asyncio`中，`call_soon`, `call_later`, `call_at`, 和 `call_soon_threadsafe` 是事件循环方法，用于调度回调的执行。它们在开发中用于安排一次性任务的执行，但各自有不同的调度方式和用例。
+
+`call_soon()`
+
+- `call_soon(callback, *args)` 方法用于尽快执行回调。它不是线程安全的，因此必须在同一线程中的事件循环上调用。
+- 它将回调放入事件循环的队列中，通常在下一个事件循环迭代中执行。
+
+```python
+def my_callback(arg):
+    print("Callback called with", arg)
+
+loop = asyncio.get_event_loop()
+# 将回调排定尽快执行
+loop.call_soon(my_callback, "example argument")
+```
+
+`call_later()`
+
+- `call_later(delay, callback, *args)` 方法在给定的延迟后执行回调。
+- 延迟是以秒为单位的，回调将在延迟时间过后的下一个事件循环迭代中执行。
+
+```python
+loop = asyncio.get_event_loop()
+# 将回调排定在5秒后执行
+loop.call_later(5, my_callback, "example argument")
+```
+
+`call_at()`
+
+- `call_at(when, callback, *args)` 方法在指定的时间执行回调。
+- 时间是一个绝对的时间戳（使用`loop.time()`来获取），当事件循环的时间达到或超过这个时间戳时，回调将被执行。
+
+```python
+loop = asyncio.get_event_loop()
+# 获取事件循环的当前时间
+now = loop.time()
+# 将回调排定在10秒后执行
+loop.call_at(now + 10, my_callback, "example argument")
+```
+
+`call_soon_threadsafe()`
+
+- `call_soon_threadsafe(callback, *args)` 是`call_soon()`的线程安全版本。
+- 它可以从非事件循环的线程调用，安全地安排回调在事件循环所在的线程中执行。
+
+```python
+loop = asyncio.get_event_loop()
+# 在另一个线程中安全地安排回调尽快执行
+loop.call_soon_threadsafe(my_callback, "example argument")
+```
+
+- 使用`call_soon`和`call_later`可以安排即时或延迟执行的回调，这在你需要执行非协程的回调函数时很有用。
+- 使用`call_at`当你有一个特定的时间点需要执行回调时。
+- `call_soon_threadsafe`是在多线程程序中与`asyncio`事件循环交互的重要工具。如果你需要从另一个线程中安排回调到事件循环，就需要使用这个方法。这通常在你需要将非`asyncio`的线程与`asyncio`程序集成时发生。
+
+##### 13.4 常用API
+
+1. **Runners (运行器)**: 使用`asyncio.run()`来运行主协程。这是程序的入口点。
+   
+   ```python
+   import asyncio
+   
+   async def main():
+       # 主协程的内容
+       pass
+   
+   asyncio.run(main())
+   ```
+   
+2. **Coroutines and Tasks (协程和任务)**: 使用`asyncio.create_task()`创建一个任务，这样可以并发执行多个协程。
+   ```python
+   import asyncio
+   
+   async def worker(number):
+       print(f'Worker {number} started')
+       await asyncio.sleep(1)
+       print(f'Worker {number} finished')
+   
+   async def main():
+       task1 = asyncio.create_task(worker(1))
+       task2 = asyncio.create_task(worker(2))
+       await task1
+       await task2
+   
+   asyncio.run(main())
+   ```
+
+3. **Streams (流)**: 使用`asyncio.open_connection()`来创建网络连接的流。
+   ```python
+   import asyncio
+   
+   async def tcp_echo_client(message):
+       reader, writer = await asyncio.open_connection(
+           '127.0.0.1', 8888)
+   
+       print(f'Send: {message}')
+       writer.write(message.encode())
+   
+       data = await reader.read(100)
+       print(f'Received: {data.decode()}')
+   
+       print('Close the connection')
+       writer.close()
+       await writer.wait_closed()
+   
+   asyncio.run(tcp_echo_client('Hello World!'))
+   ```
+
+4. **Synchronization Primitives (同步原语)**: 使用`asyncio.Lock()`防止数据竞争。
+   ```python
+   import asyncio
+   
+   async def safe_increment(lock, shared_data):
+       async with lock:
+           shared_data['value'] += 1
+   
+   async def main():
+       lock = asyncio.Lock()
+       shared_data = {'value': 0}
+       tasks = [safe_increment(lock, shared_data) for _ in range(100)]
+       await asyncio.gather(*tasks)
+       print(shared_data['value'])
+   
+   asyncio.run(main())
+   ```
+
+5. **Subprocesses (子进程)**: 使用`asyncio.create_subprocess_shell()`运行子进程。
+   ```python
+   import asyncio
+   
+   async def run_shell_command(cmd):
+       proc = await asyncio.create_subprocess_shell(
+           cmd,
+           stdout=asyncio.subprocess.PIPE,
+           stderr=asyncio.subprocess.PIPE)
+   
+       stdout, stderr = await proc.communicate()
+   
+       if stdout:
+           print(f'[stdout]\n{stdout.decode()}')
+       if stderr:
+           print(f'[stderr]\n{stderr.decode()}')
+   
+   asyncio.run(run_shell_command('ls -la'))
+   ```
+
+6. **Queues (队列)**: 使用`asyncio.Queue()`在协程间安全地传递数据。
+   ```python
+   import asyncio
+   
+   async def producer(queue):
+       for i in range(5):
+           await queue.put(f'item {i}')
+           await asyncio.sleep(1)
+   
+   async def consumer(queue):
+       while True:
+           item = await queue.get()
+           if item is None:
+               break
+           print(f'Got item {item}')
+           queue.task_done()
+   
+   async def main():
+       queue = asyncio.Queue()
+       await asyncio.gather(producer(queue), consumer(queue))
+   
+   asyncio.run(main())
+   ```
+
+7. **Exceptions (异常)**: 异常处理，例如在网络请求超时时捕获`asyncio.TimeoutError`。
+   ```python
+   import asyncio
+   
+   async def run_task():
+       try:
+           await asyncio.wait_for(asyncio.sleep(2), timeout=1)
+       except asyncio.TimeoutError:
+           print('The coroutine took too long to complete.')
+   
+   asyncio.run(run_task())
+   ```
+
+以上代码示例展示了如何在异步程序中使用`asyncio`的各种接口。在构建实际的项目时，你可能会根据具体的应用场景，组合这些接口来实现所需的功能。
+
+13.5 
+13.8 aiohttp实现高并发爬虫
 
