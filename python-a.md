@@ -5687,6 +5687,7 @@ loop.call_soon_threadsafe(my_callback, "example argument")
    ```
    
 2. **Coroutines and Tasks (协程和任务)**: 使用`asyncio.create_task()`创建一个任务，这样可以并发执行多个协程。
+   
    ```python
    import asyncio
    
@@ -5703,8 +5704,9 @@ loop.call_soon_threadsafe(my_callback, "example argument")
    
    asyncio.run(main())
    ```
-
+   
 3. **Streams (流)**: 使用`asyncio.open_connection()`来创建网络连接的流。
+   
    ```python
    import asyncio
    
@@ -5724,8 +5726,9 @@ loop.call_soon_threadsafe(my_callback, "example argument")
    
    asyncio.run(tcp_echo_client('Hello World!'))
    ```
-
+   
 4. **Synchronization Primitives (同步原语)**: 使用`asyncio.Lock()`防止数据竞争。
+   
    ```python
    import asyncio
    
@@ -5742,8 +5745,9 @@ loop.call_soon_threadsafe(my_callback, "example argument")
    
    asyncio.run(main())
    ```
-
+   
 5. **Subprocesses (子进程)**: 使用`asyncio.create_subprocess_shell()`运行子进程。
+   
    ```python
    import asyncio
    
@@ -5762,8 +5766,9 @@ loop.call_soon_threadsafe(my_callback, "example argument")
    
    asyncio.run(run_shell_command('ls -la'))
    ```
-
+   
 6. **Queues (队列)**: 使用`asyncio.Queue()`在协程间安全地传递数据。
+   
    ```python
    import asyncio
    
@@ -5786,8 +5791,9 @@ loop.call_soon_threadsafe(my_callback, "example argument")
    
    asyncio.run(main())
    ```
-
+   
 7. **Exceptions (异常)**: 异常处理，例如在网络请求超时时捕获`asyncio.TimeoutError`。
+   
    ```python
    import asyncio
    
@@ -5799,9 +5805,4 @@ loop.call_soon_threadsafe(my_callback, "example argument")
    
    asyncio.run(run_task())
    ```
-
-以上代码示例展示了如何在异步程序中使用`asyncio`的各种接口。在构建实际的项目时，你可能会根据具体的应用场景，组合这些接口来实现所需的功能。
-
-13.5 
-13.8 aiohttp实现高并发爬虫
 
