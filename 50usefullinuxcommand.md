@@ -49,7 +49,7 @@ Tasks: 218 total, 4 running, 217 sleeping, 0 stopped, 0 zombie
 ##### tcpdump
 
 ```bash
-#经过eth0  目的IP 192.168.0.22
+#经过eth0  主机 192.168.0.22
 tcpdump -i eth0 (src / dst) host 192.168.0.22
 
 #经过eth0 目的端口 1234
