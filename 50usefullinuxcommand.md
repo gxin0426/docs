@@ -11,11 +11,11 @@
 | 19.ps   | 20.kill          | 21.unset   | 22.EOF >>      | 23.特殊符号: % $ # & | 24.until             |
 | 25.cut  | 26.vmstat/mpstat | 27.free    | 28.curl & wget | 29.iptables          | 30.nmap              |
 | 31.jq   | 32.sort          | 33.strace  | 34.uptime      | 35.iostat            | 36.sysctl/modelprobe |
-| 37.sar  |                  |            |                |                      |                      |
+| 37.sar  | 38.brctl         | 39.bridge  |                |                      |                      |
 
 #### top50
 
-##### dmesg
+##### 1.dmesg
 
 命令用于显示开机信息
 
