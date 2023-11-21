@@ -80,6 +80,16 @@ tcpdump tcp -i eth0 -t -s 0 -c 100 and dst port !22 and src net 192.168.1.0/24 -
 #-w: 保存成文件 方便wireshark分析
 ```
 
+tcpdump -D 列出所有网卡
+
+tcpdump -c 抓取多少条报文
+
+tcpdump --time-stamp-precision 指定捕获时的时间精度 默认毫秒 可选纳秒 nano
+
+tcpdump -s 指定每条报文的最大字节数 默认262144字节
+
+
+
 ##### rpm
 
 ```shell
