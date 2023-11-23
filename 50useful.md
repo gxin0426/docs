@@ -19,34 +19,11 @@
 
 命令用于显示开机信息
 
-##### dd
-
-##### ss
-
-###### 5.top
-
-```bash
-top - 18:36:42 up 3 days, 18:03, 1 user, load average: 3.40, 2.25, 2.08
-Tasks: 218 total, 4 running, 217 sleeping, 0 stopped, 0 zombie
-%Cpu: 41.6 us, 42.2 sy, 0.0 ni, 0.0 id, 0.0 wa, 0.0 hi, 0.0 si, 16.2 st
-#top - 18:36:42 up 3 days, 18:03, 1 user, load average: 3.40, 2.25, 2.08：这显示了当前时间、系统已经运行的天数和小时、当前登录的用户数，以及过去1分钟、5分钟和15分钟的平均负载
-
-#Tasks: 218 total, 4 running, 217 sleeping, 0 stopped, 0 zombie：显示了系统中的任务状态。总共218个任务，其中4个正在运行，217个处于休眠状态，没有任务被停止或变成僵尸进程
-
-#%Cpu: 41.6 us, 42.2 sy, 0.0 ni, 0.0 id, 0.0 wa, 0.0 hi, 0.0 si, 16.2 st：
-# us表示用户空间使用的CPU时间
-# sy表示系统使用的时间    
-# ni (nice)：表示用户进程在 nice 模式下使用的 CPU 时间百分比
-# id (idle)：表示CPU处于空闲状态的时间百分比，没有执行任何任务 
-# hi (hardware interrupts)：表示由硬件中断引起的CPU时间百分比 
-# wa (wait)：表示CPU等待输入/输出完成的时间百分比。在这段时间里，CPU实际上是空闲的，它只是等待磁盘I/O或其他I/O操作完成 
-# si (software interrupts)：表示由软件中断引起的CPU时间百分比 
-# st CPU stealing
-```
+##### 2.dd
 
 
 
-##### tcpdump
+##### 3.tcpdump
 
 ```bash
 #经过eth0  主机 192.168.0.22
@@ -88,29 +65,183 @@ tcpdump --time-stamp-precision 指定捕获时的时间精度 默认毫秒 可�
 
 tcpdump -s 指定每条报文的最大字节数 默认262144字节
 
+• -e 显示数据链路层头部
+• -q 不显示传输层信息
+• -v 显示网络层头部更多的信息，如 TTL、id 等
+• -n 显示 IP 地址、数字端口代替 hostname 等
+• -S TCP 信息以绝对序列号替代相对序列号
+• -A 以 ASCII 方式显示报文内容，适用 HTTP 分析
+• -x 以 16 进制方式显示报文内容，不显示数据链路层
+• -xx 以 16 进制方式显示报文内容，显示数据链路层
+• -X 同时以 16 进制及 ACII 方式显示报文内容，不显示数据链路层
+• -XX 同时以 16 进制及 ACII 方式显示报文内容，显示数据链路层
 
 
-##### rpm
 
-```shell
-#常用参数
--ivh #安装显示安装进度 --install --verbose --hash
--ivh --relocate /=/opt/test test.rpm #指定安装目录 
--Uvh #升级软件包 --Update
--qa | grep httpd  #搜索软件包 --all
--ql httpd  #搜索所有文件安装目录 --list
--q git #查找git是否安装
--e #删除一个软件包 --erase
--i --install 
--v --verbose #provide more detailed info
--h --hash 
--e --erase
---test #安装测试实际不安装
---nodeps #忽略软件依赖关系，强行安装
---force #忽略软件包及文件的冲突
+
+
+##### 4.ss
+
+###### 5.top
+
+```bash
+top - 18:36:42 up 3 days, 18:03, 1 user, load average: 3.40, 2.25, 2.08
+Tasks: 218 total, 4 running, 217 sleeping, 0 stopped, 0 zombie
+%Cpu: 41.6 us, 42.2 sy, 0.0 ni, 0.0 id, 0.0 wa, 0.0 hi, 0.0 si, 16.2 st
+#top - 18:36:42 up 3 days, 18:03, 1 user, load average: 3.40, 2.25, 2.08：这显示了当前时间、系统已经运行的天数和小时、当前登录的用户数，以及过去1分钟、5分钟和15分钟的平均负载
+
+#Tasks: 218 total, 4 running, 217 sleeping, 0 stopped, 0 zombie：显示了系统中的任务状态。总共218个任务，其中4个正在运行，217个处于休眠状态，没有任务被停止或变成僵尸进程
+
+#%Cpu: 41.6 us, 42.2 sy, 0.0 ni, 0.0 id, 0.0 wa, 0.0 hi, 0.0 si, 16.2 st：
+# us表示用户空间使用的CPU时间
+# sy表示系统使用的时间    
+# ni (nice)：表示用户进程在 nice 模式下使用的 CPU 时间百分比
+# id (idle)：表示CPU处于空闲状态的时间百分比，没有执行任何任务 
+# hi (hardware interrupts)：表示由硬件中断引起的CPU时间百分比 
+# wa (wait)：表示CPU等待输入/输出完成的时间百分比。在这段时间里，CPU实际上是空闲的，它只是等待磁盘I/O或其他I/O操作完成 
+# si (software interrupts)：表示由软件中断引起的CPU时间百分比 
+# st CPU stealing
 ```
 
-###### 15netstat
+
+
+##### 15.netstat
+
+- `-r` 列出所有路由规则
+
+- `-a` （all）: 显示所有活动连接和监听端口。
+- `-n` （numeric）: 显示地址和端口号以数字形式，而不是尝试解析为名字。
+- `-p` （program）: 显示创建每个连接或监听端口的程序的PID和名称。
+
+如果在使用 `netstat` 命令时不包括 `-a` 参数，命令将不会显示所有的活动连接。默认情况下，`netstat` 会显示建立的 TCP 连接，但是**不会显示处于监听状态的端口**
+
+```shell
+[root@tgq205 ~]# netstat  | grep tcp
+tcp        0      0 tgq205:46592            10.244.1.193:http       TIME_WAIT
+tcp        0      0 localhost:54956         localhost:39514         ESTABLISHED
+tcp        0      0 localhost:39514         localhost:54956         ESTABLISHED
+tcp        0      0 tgq205:52548            tgq204:sun-sr-https     ESTABLISHED
+tcp        0      0 tgq205:52546            tgq204:sun-sr-https     ESTABLISHED
+tcp        0      0 tgq205:44634            10.244.1.194:http       TIME_WAIT
+tcp        0      0 tgq205:ssh              192.168.11:nettgain-nms ESTABLISHED
+tcp        0     48 tgq205:ssh              192.168.11.191:drmsmc   ESTABLISHED
+tcp        0      0 tgq205:57044            10.1.0.1:https          ESTABLISHED
+tcp6       0      0 tgq205:10250            tgq206:57354            ESTABLISHED
+tcp6       0      0 tgq205:10250            tgq204:50786            ESTABLISHED
+
+[root@tgq205 ~]# netstat  -a | grep tcp
+tcp        0      0 localhost:39616         0.0.0.0:*               LISTEN
+tcp        0      0 0.0.0.0:31111           0.0.0.0:*               LISTEN
+
+tcp        0      0 localhost:39514         0.0.0.0:*               LISTEN
+tcp        0      0 0.0.0.0:31902           0.0.0.0:*               LISTEN
+tcp        0      0 0.0.0.0:31070           0.0.0.0:*               LISTEN
+tcp        0      0 tgq205:46620            10.244.1.193:http       TIME_WAIT
+tcp        0      0 localhost:54956         localhost:39514         ESTABLISHED
+tcp        0      0 localhost:39514         localhost:54956         ESTABLISHED
+tcp        0      0 tgq205:52548            tgq204:sun-sr-https     ESTABLISHED
+tcp        0      0 tgq205:44662            10.244.1.194:http       TIME_WAIT
+tcp        0      0 tgq205:52546            tgq204:sun-sr-https     ESTABLISHED
+tcp        0      0 tgq205:ssh              192.168.11:nettgain-nms ESTABLISHED
+tcp        0     48 tgq205:ssh              192.168.11.191:drmsmc   ESTABLISHED
+tcp        0      0 tgq205:57044            10.1.0.1:https          ESTABLISHED
+tcp6       0      0 [::]:10250              [::]:*                  LISTEN
+tcp6       0      0 [::]:10256              [::]:*                  LISTEN
+tcp6       0      0 [::]:ssh                [::]:*                  LISTEN
+tcp6       0      0 tgq205:10250            tgq206:57354            ESTABLISHED
+tcp6       0      0 tgq205:10250            tgq204:50786            ESTABLISHED
+```
+
+- `-t`: 显示TCP连接。
+- `-u`: 显示UDP连接。
+- `-l`: 仅显示处于监听状态的套接字。
+- `-s`: 显示每个协议的统计数据。
+- `-r`: 显示路由表。
+- `-i`: 显示网络接口列表。
+- `-e`: 显示扩展信息，如错误统计。
+- `-c`: 持续输出网络状态信息（每隔一秒刷新一次）。
+- `-o`: 显示每个连接的定时器信息（如TCP连接的重试次数）。
+- `-g`: 显示多播组成员资格信息。
+
+
+
+```shell
+[root@tgq205 ~]# netstat -tapn
+Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 127.0.0.1:39616         0.0.0.0:*               LISTEN      1693/containerd
+
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      1671/sshd
+tcp        0      0 127.0.0.1:25            0.0.0.0:*               LISTEN      2211/master
+ 3245/kube-proxy
+tcp        0      0 127.0.0.1:54956         127.0.0.1:39514         ESTABLISHED 1901/kubelet
+tcp        0      0 127.0.0.1:39514         127.0.0.1:54956         ESTABLISHED 1901/kubelet
+tcp        0      0 10.244.1.1:45044        10.244.1.194:80         TIME_WAIT   -
+tcp        0      0 192.168.8.205:52548     192.168.8.204:6443      ESTABLISHED 3245/kube-proxy
+61689/sshd: root@pt
+tcp        0      0 192.168.8.205:57044     10.1.0.1:443            ESTABLISHED 6031/flanneld
+tcp6       0      0 :::22                   :::*                    LISTEN      1671/sshd
+tcp6       0      0 192.168.8.205:10250     192.168.8.206:57354     ESTABLISHED 1901/kubelet
+tcp6       0      0 192.168.8.205:10250     192.168.8.204:50786     ESTABLISHED 1901/kubelet
+```
+
+1. **-t (TCP)**: 这个选项告诉 `netstat` 只显示TCP连接。TCP（传输控制协议）是一种常用的网络协议，用于在互联网上建立可靠的连接。
+2. **-a (all)**: 显示所有活动的和非活动的套接字（socket）。默认情况下，`netstat` 只显示活动的套接字。
+3. **-p (program)**: 显示哪个进程正在使用哪个套接字。这对于确定哪个应用程序正在监听哪个端口或建立了哪些连接非常有用。
+4. **-n (numeric)**: 以数字形式显示地址和端口号，而不是尝试解析成名称。这可以加快显示速度，并有助于避免在解析名称时可能遇到的问题。
+
+当运行 `netstat -tapn` 时，您会得到类似这样的输出：
+
+- 本地地址（Local Address）和端口号，显示您的系统上哪些服务正在监听。
+- 远程地址（Foreign Address）和端口号，显示与您的系统建立连接的外部系统。
+- 连接状态（如 LISTEN, ESTABLISHED 等）。
+- 使用该套接字的进程ID和名称。
+
+```bash
+[root@tgq205 ~]# netstat  -i
+Kernel Interface table
+Iface             MTU    RX-OK RX-ERR RX-DRP RX-OVR    TX-OK TX-ERR TX-DRP TX-OVR Flg
+cni0             1450    20441      0      0 0         23155      0      0      0 BMRU
+docker0          1500        0      0      0 0             0      0      0      0 BMU
+em1              1500   222399      0  17683 0         42516      0      0      0 BMRU
+em2              1500        0      0      0 0             0      0      0      0 BMU
+em3              1500        0      0      0 0             0      0      0      0 BMU
+em4              1500        0      0      0 0             0      0      0      0 BMU
+```
+
+您运行的 `netstat -i` 命令提供了有关系统上网络接口的信息。让我们解析您收到的输出：
+
+1. **Iface（接口）**：此列显示网络接口的名称，例如 `em1`、`em2`、`docker0` 等。
+
+2. **MTU（最大传输单元）**：这表示网络协议能够传输的最大数据包大小。小于此限制的数据包将完整传输，而大于此限制的数据包将被分段。
+
+3. **RX-OK（接收正常）**：接口上无错误接收到的数据包数量。
+
+4. **RX-ERR（接收错误）**：接收到的带有错误的数据包数量。这包括CRC（循环冗余校验）错误、帧对齐错误等。
+
+5. **RX-DRP（接收丢包）**：被丢弃的接收数据包数量。这可能由于多种原因，如缓冲区溢出、数据包损坏或其他网络问题。
+
+6. **RX-OVR（接收溢出）**：表示接收硬件由于缺乏缓冲空间而无法处理接收数据的次数。
+
+7. **TX-OK（发送正常）**：接口上无错误传输的数据包数量。
+
+8. **TX-ERR（发送错误）**：传输的带有错误的数据包数量。
+
+9. **TX-DRP（发送丢包）**：被丢弃的传输数据包数量。
+
+10. **TX-OVR（发送溢出）**：显示发送硬件由于缺乏系统资源而无法发送数据的次数。
+
+11. **Flg（标志）**：此列显示接口的状态标志。您输出中的标志如下：
+    - **B**：广播 - 该接口支持广播。
+    - **M**：组播 - 该接口支持组播。
+    - **R**：运行中 - 该接口正在运行。
+    - **U**：启动 - 该接口已启动。
+
+例如，在您的输出中，`em1` 接口成功接收了 222,399 个数据包，没有错误，但丢弃了 17,683 个数据包（RX-DRP）。它还成功发送了 42,516 个数据包。状态标志表明它支持广播和组播，并且正在运行且已启动。
+
+
+
+###### 
 
 ```bash
 netstat -i  #显示主机每个网络接口的配置和状态，还有相关的流量计数。 == ifconfig -a
@@ -141,6 +272,28 @@ L: Loopback，表示这是一个循环回接口。
 ```
 
 
+
+##### 16.rpm
+
+```shell
+#常用参数
+-ivh #安装显示安装进度 --install --verbose --hash
+-ivh --relocate /=/opt/test test.rpm #指定安装目录 
+-Uvh #升级软件包 --Update
+-qa | grep httpd  #搜索软件包 --all
+-ql httpd  #搜索所有文件安装目录 --list
+-q git #查找git是否安装
+-e #删除一个软件包 --erase
+-i --install 
+-v --verbose #provide more detailed info
+-h --hash 
+-e --erase
+--test #安装测试实际不安装
+--nodeps #忽略软件依赖关系，强行安装
+--force #忽略软件包及文件的冲突
+```
+
+###### 
 
 ###### 20kill
 
