@@ -4,12 +4,10 @@
 
 1. etcd学习（*）
 2. python学习web开发（**）
-3. ansbile文档整理（cubestudio）（ *）
 4. operator学习和改进（pytorch）（****）
 5. golang开发（****）
 6. pytorch学习（****）
 7. 英语文档阅读（一本书 未选择呢）
-8. csapp （*）
 9. 算法每日一题（*） 
 10. **mysql redis  gorm 学习** 
 
@@ -130,7 +128,7 @@ https://bbs.huaweicloud.com/blogs/351263
 
 
 
-#### 阶段性学习计划
+### 阶段性学习计划
 
 ##### 1. python 机器学习相关基础知识
 
@@ -170,4 +168,9 @@ https://bbs.huaweicloud.com/blogs/351263
 
 ##### 背完单词
 
-#### 8. 
+### 2023.12.05-2024.1.09
+
+1. 60个englishpod
+2. 3000单词复习
+3. 分布式训练 pytorch and  pytorch-operator
+4. cube-studio pipe源码部分
