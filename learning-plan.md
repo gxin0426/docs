@@ -174,3 +174,11 @@ https://bbs.huaweicloud.com/blogs/351263
 2. 3000单词复习
 3. 分布式训练 pytorch and  pytorch-operator
 4. cube-studio pipe源码部分
+
+### 工作方法
+
+one pr one day
+
+problem solving mindset
+
+career goal to manager
