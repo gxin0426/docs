@@ -178,5 +178,11 @@ git log -n # 只显示几行
 git log --all # 显示所有分支commit信息
 ```
 
+```
+git ls-files -s
+git cat-file -p
+git cherry-pick
+```
+
 
 
