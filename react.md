@@ -211,3 +211,39 @@ function Form() {
 13. **--silent** 或 **--quiet** - 减少安装过程中输出的信息。
 
 这些参数和选项可以根据需要组合使用来达到你想要的效果。注意，随着npm版本的更新，这些参数和选项也可能会有变化。
+
+
+
+#### await和async
+
+```js
+const onConfirm = async (data) => {
+    console.log('删除点击了', data)
+    
+    await delArticleAPI(data.id)
+    //在这等待delArticleAPI完成并且返回promise，才继续执行下面的代码
+    setReqData({
+      ...reqData
+    })
+} 
+```
+
+`await delArticleAPI(data.id)`: `await`用于等待一个`Promise`的结果。`delArticleAPI`很可能是一个返回`Promise`的异步API调用，用于删除一个文章。通过在这个调用前加上`await`，你可以“暂停”函数的执行，直到`Promise`被解决（即API请求完成）。这样做的好处是代码的后续部分，像是`setReqData({...reqData})`调用，将在`delArticleAPI`完成后执行，这可以保证状态更新是在文章删除操作之后进行的。
+
+##### 第二种写法
+
+```js
+const onConfirm = (data) => {
+  console.log('删除点击了', data);
+  delArticleAPI(data.id)
+    .then(() => {
+      setReqData({
+        ...reqData
+      });
+    })
+    .catch((error) => {
+      console.error('删除文章出错:', error);
+    });
+};
+```
+
